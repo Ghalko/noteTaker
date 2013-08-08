@@ -1,7 +1,8 @@
 import tkSimpleDialog
 from Tkinter import *
 import ncore
-import ptime
+import sys
+import time
 
 class Search(object):
     '''This is a dialog for searching.'''
@@ -77,7 +78,7 @@ class Search(object):
     def _cancel(self, event=None):
         self.mp.destroy()
 
-
+#**************************************************************************
 class LBChoice(object):
     '''This is a general list box and returning mechanism. Mostly for unarchiving.'''
     def __init__(self, master=None, title=None, li=[]):
@@ -129,6 +130,109 @@ class LBChoice(object):
         self.m.wait_window(self.mp)
         return self.v
 
+#*************************************************************************
+class ptime(object):
+    '''Gets an event time, saves it to subtract from last event time.'''
+    def __init__(self, button=None, project=None, th=None):
+        if project == None or button == None or th == None:
+            print "Class needs project, button and time handler";
+            return
+        self.p = project
+        self.b = button
+        self.th = th
+        self.going = PhotoImage(file="/home/bgorges/Tools/noteTaker/python/going.gif")
+        self.stopped = PhotoImage(file="/home/bgorges/Tools/noteTaker/python/stopped.gif")
+        self.b.config(image=self.stopped)
+        self.b.pack()
+        self.flag = 0
+        self.t = 0
+
+    def _start(self):
+        '''Gets the first time.'''
+        self.t = time.time()
+        self.flag = 1
+        #button stuff
+        self.b.config(image=self.going)
+        self.b.pack()
+
+    def _stop(self):
+        '''Gets the second time and takes away the first.'''
+        t = int(time.time() - self.t)
+        self.flag = 0
+        d = int(datetime.datetime.now().strftime("%Y%m%d")) #time
+        self.th.update(self.p, t, d)
+        #button stuff
+        self.b.config(image=self.stopped)
+        self.b.pack()
+
+    def click(self):
+        if self.flag:
+            self._stop()
+        else:
+            self._start()
+#*************************************************************************
+class tsummary(object):
+    '''For retrieving time data from the data base. And possibly updating.'''
+    def __init__(self, th=None, master=None, title=None):
+        self.m = master
+        self.th = th
+        self.b = None #beginning date
+        self.e = None #end date
+        self.p = None #project
+        if not self.m:
+            return
+        self.mp = Toplevel(self.m)
+        self.mp.transient(self.m)
+        self.mp.bind("<Return>", self._search)
+        self.mp.bind("<Escape>", self._cancel)
+        if title:
+            self.mp.title(title)
+        #****
+        self.d = Text(self.mp, height=10, width=80, wrap=WORD, bg='sea green', spacing1=5) #Display
+        begf = Frame(self.mp)
+        begf.pack(side=TOP) #beginning
+        Label(begf, text='Begin: ').pack(side=LEFT)
+        self.be = Entry(begf)
+        self.be.pack(side=RIGHT)
+        endf = Frame(self.mp)
+        endf.pack(side=TOP)
+        Label(endf, text='End:   ').pack(side=LEFT)
+        self.ee = Entry(endf)
+        self.ee.pack(side=RIGHT)
+        pf = Frame(self.mp)
+        pf.pack(side=TOP)
+        Label(pf, text='Project:').pack(side=LEFT)
+        self.pe = Entry(pf)
+        self.pe.pack(side=RIGHT)
+        bf = Frame(self.mp)
+        bf.pack(side=TOP)
+        search = Button(bf, text="Search", command=self._search)
+        search.pack(side=LEFT)
+        cancel = Button(bf, text="Cancel", command=self._cancel)
+        cancel.pack(side=RIGHT)
+
+    def _search(self, event=None):
+        self.b = self.be.get()
+        self.e = self.ee.get()
+        self.p = self.pe.get()
+        self.d.delete('1.0', END)
+        if self.b:
+            self.b = int(self.b)
+        if self.e:
+            self.e = int(self.e)
+        if self.p:
+            for row in self.th.ret_notes(self.b, self.e, self.p):
+                s = str(row[0]) + ' + ' + str(row[1]) + '\n'
+                self.d.insert(END, s)
+        else:
+            for row in self.th.ret_notes(self.b, self.e, self.p):
+                s = str(row[0]) + ' + ' + str(row[1]) + ' + ' + str(row[2]) + '\n'
+                self.d.insert(END, s)
+        self.d.pack(side=RIGHT)
+
+    def _cancel(self, event=None):
+        self.mp.destroy()
+#***********************************************************************
 class projArea(object):
         def __init__(self, mf, t, nc, th):
             self.nc = nc
@@ -142,7 +246,7 @@ class projArea(object):
             Label(f2, text=t, width=37, font=("Helvetica", 16)).pack(side=LEFT)
             b = Button(f2)
             b.pack(side=LEFT)
-            pt = ptime.ptime(project=self.t, button=b, th=self.th)
+            pt = ptime(project=self.t, button=b, th=self.th)
             b.config(command=pt.click)
             Button(f2, text='X', command=self.close).pack(side=LEFT)
             self.f.bind("<Enter>", self.ent)
@@ -194,14 +298,15 @@ class projArea(object):
             self.nc.archive(self.t)
             self.f.pack_forget()
             self.f.destroy()
-
+#*********************************************************************
 class noteGui(Frame):
-    def __init__(self, master=None):
+    def __init__(self, master=None, path=None):
         self.m = master
+        self.path = path
         self.f = Frame.__init__(self, master)
         self.pack()
-        self.nc = ncore.noteCore() #noteCore
-        self.th = ptime.timehandler()
+        self.nc = ncore.noteCore(dbpath=self.path) #noteCore
+        self.th = ncore.timehandler(dbpath=self.path)#timehandler
         self.d = {}
         self.l = 0         #The listbox to unarchive.
         self.fillmw()
@@ -215,6 +320,7 @@ class noteGui(Frame):
         filemenu.add_command(label="Open", command=self.oproject)
         menubar.add_cascade(label="File", menu=filemenu)
         menubar.add_command(label='Search', command=self.search)
+        menubar.add_command(label='Time', command=self.time)
         self.m.config(menu=menubar)
         un = self.nc.get_unarchived()
         for u in un:
@@ -239,9 +345,28 @@ class noteGui(Frame):
         
     def search(self):
         Search(self.m, 'Search', nc=self.nc)
-        
+
+    def time(self):
+        tsummary(th=self.th, master=self.m, title="Time")
+
+if len(sys.argv) < 2:
+    print "Needs -path <path to db>"
+    sys.exit()
+
+pflag = 0
+path = None
+for a in sys.argv:
+    if pflag:
+        path = str(a)
+        pflag = 0
+    elif str(a) == '-path':
+        pflag = 1
+
+if not path:
+    sys.exit()
+
 root = Tk()
 root.title("noteTaker")
-app = noteGui(master=root)
+app = noteGui(master=root, path=path)
 app.mainloop()
 #root.destroy()
