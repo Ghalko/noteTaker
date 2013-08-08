@@ -3,8 +3,13 @@ import sqlite3
 
 class noteCore(object):
     '''Deals with individual notes and projects through a sql interface'''
-    def __init__(self, db="db/notes.db"):
-        self.conn = sqlite3.connect(db)
+    def __init__(self, dbpath=None):
+        if dbpath:
+            self.db = dbpath
+        else:
+            print "Need path to database directory."
+            return
+        self.conn = sqlite3.connect(self.db + "/notes.db")
         self.conn.text_factory = str
         self.c = self.conn.cursor()
         self.a = []
@@ -62,7 +67,7 @@ class noteCore(object):
         return [r[0] for r in self.c.execute("SELECT DISTINCT project FROM notes")]
         
     def load_archive(self):
-        f = open('db/archive.txt', 'r')
+        f = open(self.db + '/archive.txt', 'r')
         for line in f:
             self.a.append(line.strip())
         f.close()
@@ -78,7 +83,7 @@ class noteCore(object):
         return ans
         
     def set_archive(self):
-        f = open('db/archive.txt', 'w')
+        f = open(self.db + '/archive.txt', 'w')
         for i in self.a:
             i = i + '\n'
             f.write(i)
@@ -91,3 +96,49 @@ class noteCore(object):
     def unarchive(self, p):
         self.a.remove(p)
         self.set_archive()
+
+#*************************************************************************
+class timehandler(object):
+    def __init__(self, dbpath=None):
+        if dbpath:
+            self.db = dbpath
+        else:
+            print "Need path to database directory."
+            return
+        self.conn = sqlite3.connect(self.db + "/time.db")
+        self.c = self.conn.cursor()
+        try:
+            self.c.execute("CREATE TABLE times (project, date INTEGER, seconds INTEGER)")
+        except:
+            pass
+
+    def update(self, project, time, date, replace=None):
+        self.c.execute("SELECT seconds FROM times WHERE project=? AND date=?", [project, date])
+        s = self.c.fetchone()
+        if s == None:
+            self.c.execute("INSERT INTO times VALUES (?,?,?)", [project, date, time])
+        else:
+            if replace:
+                print "Replace not implemented"
+                #self.c.execute("REPLACE INTO times VALUES (?,?,?)"
+            else:
+                time = time + s[0]
+                self.c.execute("UPDATE times SET seconds=? WHERE project=? AND date=?", [time, project, date])
+        self.conn.commit()
+
+    def ret_notes(self, b=None, e=None, project=None):
+        '''Takes a search, (beginning, end, and project optional)'''
+        if b and e and project:
+            return self.c.execute("SELECT date,seconds FROM times WHERE project=? AND date>=? AND date<=?", [project, b, e])
+        elif b and project:
+            return self.c.execute("SELECT date,seconds FROM times WHERE project=? AND date>=?", [project, b])
+        elif e and project:
+            return self.c.execute("SELECT date,seconds FROM times WHERE project=? AND date<=?", [project, e])
+        elif b and e:
+            return self.c.execute("SELECT project,date,seconds FROM times WHERE date>=? AND date<=?", [b, e])
+        elif b:
+            return self.c.execute("SELECT project,date,seconds FROM times WHERE date>=?", [b])
+        elif e:
+            return self.c.execute("SELECT project,date,seconds FROM times WHERE date<=?", [e])
+        elif project:
+            return self.c.execute("SELECT date,seconds FROM times WHERE project=?", [project])
