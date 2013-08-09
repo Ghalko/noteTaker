@@ -3,6 +3,7 @@ from Tkinter import *
 import ncore
 import sys
 import time
+import datetime
 
 class Search(object):
     '''This is a dialog for searching.'''
@@ -133,15 +134,15 @@ class LBChoice(object):
 #*************************************************************************
 class ptime(object):
     '''Gets an event time, saves it to subtract from last event time.'''
-    def __init__(self, button=None, project=None, th=None):
+    def __init__(self, button=None, project=None, th=None, path=None):
         if project == None or button == None or th == None:
             print "Class needs project, button and time handler";
             return
         self.p = project
         self.b = button
         self.th = th
-        self.going = PhotoImage(file="/home/bgorges/Tools/noteTaker/python/going.gif")
-        self.stopped = PhotoImage(file="/home/bgorges/Tools/noteTaker/python/stopped.gif")
+        self.going = PhotoImage(file=path+"/going.gif")
+        self.stopped = PhotoImage(file=path+"/stopped.gif")
         self.b.config(image=self.stopped)
         self.b.pack()
         self.flag = 0
@@ -234,7 +235,7 @@ class tsummary(object):
         self.mp.destroy()
 #***********************************************************************
 class projArea(object):
-        def __init__(self, mf, t, nc, th):
+        def __init__(self, mf, t, nc, th, path):
             self.nc = nc
             self.th = th
             self.t = t
@@ -246,7 +247,7 @@ class projArea(object):
             Label(f2, text=t, width=37, font=("Helvetica", 16)).pack(side=LEFT)
             b = Button(f2)
             b.pack(side=LEFT)
-            pt = ptime(project=self.t, button=b, th=self.th)
+            pt = ptime(project=self.t, button=b, th=self.th, path=path)
             b.config(command=pt.click)
             Button(f2, text='X', command=self.close).pack(side=LEFT)
             self.f.bind("<Enter>", self.ent)
@@ -324,7 +325,7 @@ class noteGui(Frame):
         self.m.config(menu=menubar)
         un = self.nc.get_unarchived()
         for u in un:
-            self.d[u] = projArea(self.f, u, self.nc, self.th)
+            self.d[u] = projArea(self.f, u, self.nc, self.th, self.path)
         
     def save(self):
         self.nc.save()
@@ -334,13 +335,13 @@ class noteGui(Frame):
         ans = tkSimpleDialog.askstring("Project", "New Project Name:", parent=self.m)
         if ans:
             if ans not in self.nc.get_all_projects():
-                self.d[ans] = projArea(self.f, ans, self.nc, self.th)
+                self.d[ans] = projArea(self.f, ans, self.nc, self.th, self.path)
                 
     def oproject(self):
         p = LBChoice(master=self.m, title='Open', li=self.nc.get_archive()).returnValue()
         if p == None:
             return
-        self.d[p] = projArea(self.f, p, self.nc, self.th)
+        self.d[p] = projArea(self.f, p, self.nc, self.th, self.path)
         self.nc.unarchive(p)
         
     def search(self):

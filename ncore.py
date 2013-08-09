@@ -9,7 +9,7 @@ class noteCore(object):
         else:
             print "Need path to database directory."
             return
-        self.conn = sqlite3.connect(self.db + "/notes.db")
+        self.conn = sqlite3.connect(self.db + "/db/notes.db")
         self.conn.text_factory = str
         self.c = self.conn.cursor()
         self.a = []
@@ -67,7 +67,7 @@ class noteCore(object):
         return [r[0] for r in self.c.execute("SELECT DISTINCT project FROM notes")]
         
     def load_archive(self):
-        f = open(self.db + '/archive.txt', 'r')
+        f = open(self.db + '/db/archive.txt', 'r')
         for line in f:
             self.a.append(line.strip())
         f.close()
@@ -83,7 +83,7 @@ class noteCore(object):
         return ans
         
     def set_archive(self):
-        f = open(self.db + '/archive.txt', 'w')
+        f = open(self.db + '/db/archive.txt', 'w')
         for i in self.a:
             i = i + '\n'
             f.write(i)
@@ -105,7 +105,7 @@ class timehandler(object):
         else:
             print "Need path to database directory."
             return
-        self.conn = sqlite3.connect(self.db + "/time.db")
+        self.conn = sqlite3.connect(self.db + "/db/time.db")
         self.c = self.conn.cursor()
         try:
             self.c.execute("CREATE TABLE times (project, date INTEGER, seconds INTEGER)")
