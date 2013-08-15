@@ -180,6 +180,7 @@ class tsummary(object):
         self.b = None #beginning date
         self.e = None #end date
         self.p = None #project
+        self.d = {} #dictionary of projects
         if not self.m:
             return
         self.mp = Toplevel(self.m)
@@ -189,7 +190,9 @@ class tsummary(object):
         if title:
             self.mp.title(title)
         #****
-        self.d = Text(self.mp, height=10, width=80, wrap=WORD, bg='sea green', spacing1=5) #Display
+        self.f = Frame(self.mp)
+        self.f.pack(side=BOTTOM)
+        #self.d = Text(self.mp, height=10, width=80, wrap=WORD, bg='sea green', spacing1=5) #Display
         begf = Frame(self.mp)
         begf.pack(side=TOP) #beginning
         Label(begf, text='Begin: ').pack(side=LEFT)
@@ -216,89 +219,122 @@ class tsummary(object):
         self.b = self.be.get()
         self.e = self.ee.get()
         self.p = self.pe.get()
-        self.d.delete('1.0', END)
+        for e in self.d:
+            self.d[e].clear()
         if self.b:
             self.b = int(self.b)
         if self.e:
             self.e = int(self.e)
         if self.p:
+            if self.p not in self.d:
+                self.d[self.p] = tsdisp(self.f, self.p)
             for row in self.th.ret_notes(self.b, self.e, self.p):
-                s = str(row[0]) + ' + ' + str(row[1]) + '\n'
-                self.d.insert(END, s)
+                self.d[self.p].append(row[0], row[1])
+            self.d[self.p].update()
         else:
             for row in self.th.ret_notes(self.b, self.e, self.p):
-                s = str(row[0]) + ' + ' + str(row[1]) + ' + ' + str(row[2]) + '\n'
-                self.d.insert(END, s)
-        self.d.pack(side=RIGHT)
+                if row[0] not in self.d:
+                    self.d[row[0]] = tsdisp(self.f, row[0])
+                self.d[row[0]].append(row[1], row[2])
+                self.d[row[0]].update()
 
     def _cancel(self, event=None):
+        self.d = {}
         self.mp.destroy()
+
+#***********************************************************************
+class tsdisp(object):
+    '''Project time summary and list.'''
+    def __init__(self, master, project):
+        self.f = Frame(master, borderwidth=2)
+        Label(self.f, text=project).pack(side=TOP)
+        self.t = 0 #total time on project over period.
+        self.l = Label(self.f)
+        self.l.pack(side=TOP)
+        self.p = project
+        self.disp = Text(self.f, height=8, width=20, wrap=WORD,
+                         bg='sea green', spacing1=5)
+        self.disp.pack(side=BOTTOM)
+
+    def append(self, date, time):
+        self.t = self.t + time
+        s = str(date) + ': ' + str(time) + '\n'
+        self.disp.insert(END, s)
+
+    def update(self):
+        self.l .config(text="Total: "+str(self.t))
+        self.f.pack(side=LEFT)
+
+    def clear(self):
+        self.disp.delete('1.0', END)
+        self.f.pack_forget()
+        
 #***********************************************************************
 class projArea(object):
-        def __init__(self, mf, t, nc, th, path):
-            self.nc = nc
-            self.th = th
-            self.t = t
-            self.lock = 0
-            self.f = Frame(mf, relief=RAISED, borderwidth=2)
-            f2 = Frame(self.f)
-            f2.pack()
-            Button(f2, text='Lock', command=self.ul).pack(side=LEFT)
-            Label(f2, text=t, width=37, font=("Helvetica", 16)).pack(side=LEFT)
-            b = Button(f2)
-            b.pack(side=LEFT)
-            pt = ptime(project=self.t, button=b, th=self.th, path=path)
-            b.config(command=pt.click)
-            Button(f2, text='X', command=self.close).pack(side=LEFT)
-            self.f.bind("<Enter>", self.ent)
-            self.f.bind("<Leave>", self.lv)
-            self.prev()
-            self.entry = Text(self.f, width=80, height=10, bg='white', wrap=WORD)
-            self.entry.bind("<Shift-Key-Return>", self.commit_note)
-            self.f.pack()
+    def __init__(self, mf, t, nc, th, path):
+        self.nc = nc
+        self.th = th
+        self.t = t
+        self.lock = 0
+        self.f = Frame(mf, relief=RAISED, borderwidth=2)
+        f2 = Frame(self.f)
+        f2.pack()
+        Button(f2, text='Lock', command=self.ul).pack(side=LEFT)
+        Label(f2, text=t, width=37, font=("Helvetica", 16)).pack(side=LEFT)
+        b = Button(f2)
+        b.pack(side=LEFT)
+        pt = ptime(project=self.t, button=b, th=self.th, path=path)
+        b.config(command=pt.click)
+        Button(f2, text='X', command=self.close).pack(side=LEFT)
+        self.f.bind("<Enter>", self.ent)
+        self.f.bind("<Leave>", self.lv)
+        self.prev()
+        self.entry = Text(self.f, width=80, height=10, bg='white', wrap=WORD)
+        self.entry.bind("<Shift-Key-Return>", self.commit_note)
+        self.f.pack()
         
-        def prev(self):
-            self.f1 = Frame(self.f)
-            scrollbar = Scrollbar(self.f1)
-            scrollbar.pack(side=RIGHT, fill=Y)
-            self.p = Text(self.f1, height=10, width=77, wrap=WORD, bg='light blue', spacing1=5)
-            self.p.pack()
-            self.p.config(yscrollcommand=scrollbar.set)
-            scrollbar.config(command=self.p.yview)
-            self.uprev()
+    def prev(self):
+        self.f1 = Frame(self.f)
+        scrollbar = Scrollbar(self.f1)
+        scrollbar.pack(side=RIGHT, fill=Y)
+        self.p = Text(self.f1, height=10, width=77, wrap=WORD, bg='light blue', spacing1=5)
+        self.p.pack()
+        self.p.config(yscrollcommand=scrollbar.set)
+        scrollbar.config(command=self.p.yview)
+        self.uprev()
                 
-        def uprev(self):
-            self.p.delete('1.0', END)
-            for row in self.nc.print_project(self.t):
-                s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
-                self.p.insert(END, s)
-            self.p.yview(END)
+    def uprev(self):
+        self.p.delete('1.0', END)
+        for row in self.nc.print_project(self.t):
+            s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
+            self.p.insert(END, s)
+        self.p.yview(END)
         
-        def ent(self, event):
-                self.f1.pack()
-                self.entry.pack()
-                self.entry.focus_set()
+    def ent(self, event):
+        self.f1.pack()
+        self.entry.pack()
+        self.entry.focus_set()
             
-        def lv(self, event):
-            if self.lock == 0:
-                self.f1.pack_forget()
-                self.entry.pack_forget()
+    def lv(self, event):
+        if self.lock == 0:
+            self.f1.pack_forget()
+            self.entry.pack_forget()
             
-        def ul(self):
-            if self.lock == 0:
-                self.lock = 1
-            else:
-                self.lock = 0
+    def ul(self):
+        if self.lock == 0:
+            self.lock = 1
+        else:
+            self.lock = 0
         
-        def commit_note(self, event):
-            self.nc.note_in(self.t, self.entry.get('1.0',END).strip(), None)
-            self.entry.delete('1.0', END)
-            self.uprev()
+    def commit_note(self, event):
+        self.nc.note_in(self.t, self.entry.get('1.0',END).strip(), None)
+        self.entry.delete('1.0', END)
+        self.uprev()
             
-        def close(self):
-            self.nc.archive(self.t)
-            self.f.pack_forget()
-            self.f.destroy()
+    def close(self):
+        self.nc.archive(self.t)
+        self.f.pack_forget()
+        self.f.destroy()
 #*********************************************************************
 class noteGui(Frame):
     def __init__(self, master=None, path=None):
