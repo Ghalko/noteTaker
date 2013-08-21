@@ -16,8 +16,6 @@ class Search(object):
         self.e = None #end date
         self.p = None #project
         self.s = None #search term
-        if not self.m:
-            return
         self.mp = Toplevel(master)
         self.mp.transient(master)
         self.mp.bind("<Return>", self._search)
