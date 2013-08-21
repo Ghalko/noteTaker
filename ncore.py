@@ -1,4 +1,3 @@
-import datetime
 import sqlite3
 
 class noteCore(object):
@@ -38,34 +37,28 @@ class noteCore(object):
         else:
             return self.c.execute("SELECT project,date,time,note FROM notes WHERE note LIKE ?", ['%'+s+'%'])
     
-    def print_note(self, note, output):
-        print note
-        pass
-    
-    def print_day(self, day):
-        for row in self.c.execute("SELECT * FROM notes WHERE date=?", (day,)):
-            print row[1], row[2], row[3]
-    
-    def print_project(self, project):
-        return self.c.execute("SELECT * FROM notes WHERE project=?", (project,))
+    def print_project(self, project, date=None, time=None):
+        '''Returns a project (date and time optional)'''
+        if date == None or time == None:
+            return self.c.execute("SELECT * FROM notes WHERE project=?",
+                                  (project,))
+        return self.c.execute("SELECT * FROM notes WHERE project=? AND date>=? AND time>?", [project, date, time])
         
-    
-    def format_print(self, text):
-        pass
-    
     def save(self):
+        '''Commits the database.'''
         self.conn.commit()
     
-    def note_in(self, project, text, output):
-        t = datetime.datetime.now() #time
-        d = int(t.strftime("%Y%m%d"))
-        t = int(t.strftime("%H%M"))
-        self.c.execute("INSERT INTO notes VALUES (?,?,?,?)", (d, t, project, text,))
+    def note_in(self, project, text, date, time):
+        '''Takes date, time, project, and text and submits it to the sql.'''
+        self.c.execute("INSERT INTO notes VALUES (?,?,?,?)",
+                       (date, time, project, text,))
         self.save()
         
     def get_all_projects(self):
+        '''Returns a list of distinct projects.'''
         return [r[0] for r in self.c.execute("SELECT DISTINCT project FROM notes")]
-        
+
+#* Archived project handling **********************************************
     def load_archive(self):
         f = open(self.db + '/db/archive.txt', 'r')
         for line in f:
@@ -99,6 +92,7 @@ class noteCore(object):
 
 #*************************************************************************
 class timehandler(object):
+    '''Facilitates tracking time and displaying time tracked via sql.'''
     def __init__(self, dbpath=None):
         if dbpath:
             self.db = dbpath

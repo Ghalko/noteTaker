@@ -6,43 +6,44 @@ import time
 import datetime
 
 class Search(object):
-    '''This is a dialog for searching.'''
+    '''This is a dialog for searching through notes.'''
     def __init__(self, master=None, title=None, nc=None):
-        '''Must have master, title is optional, li is too.'''
-        self.m = master
-        self.nc = nc
+        '''Must have master, and ncore, title is optional.'''
+        if master == None or nc == None:
+            return
+        self.nc = nc #ncore, the database to search through
         self.b = None #beginning date
         self.e = None #end date
         self.p = None #project
         self.s = None #search term
         if not self.m:
             return
-        self.mp = Toplevel(self.m)
-        self.mp.transient(self.m)
-        #self.mp.grab_set()
+        self.mp = Toplevel(master)
+        self.mp.transient(master)
         self.mp.bind("<Return>", self._search)
         self.mp.bind("<Escape>", self._cancel)
         if title:
             self.mp.title(title)
         f = Frame(self.mp)         #Sets up the fields.
         f.pack(side=LEFT)
-        self.d = Text(self.mp, height=10, width=80, wrap=WORD, bg='sea green', spacing1=5) #Display
-        begf = Frame(self.mp)
-        begf.pack(side=TOP) #beginning
+        self.d = Text(self.mp, height=10, width=80, wrap=WORD,
+                      bg='sea green', spacing1=5) #Display
+        begf = Frame(self.mp) #beginning date (inclusive)
+        begf.pack(side=TOP)
         Label(begf, text='Begin: ').pack(side=LEFT)
         self.be = Entry(begf)
         self.be.pack(side=RIGHT)
-        endf = Frame(self.mp)
+        endf = Frame(self.mp) #ending date (inclusive)
         endf.pack(side=TOP)
         Label(endf, text='End:   ').pack(side=LEFT)
         self.ee = Entry(endf)
         self.ee.pack(side=RIGHT)
-        pf = Frame(self.mp)
+        pf = Frame(self.mp) #project
         pf.pack(side=TOP)
         Label(pf, text='Project:').pack(side=LEFT)
         self.pe = Entry(pf)
         self.pe.pack(side=RIGHT)
-        self.se = Entry(self.mp)
+        self.se = Entry(self.mp) #search term entry
         self.se.pack(side=TOP, fill=X)
         bf = Frame(self.mp)
         bf.pack(side=TOP)
@@ -50,8 +51,8 @@ class Search(object):
         search.pack(side=LEFT)
         cancel = Button(bf, text="Cancel", command=self._cancel)
         cancel.pack(side=RIGHT)
-        clear = Button(f, text="Clear", command=self._clear)
-        clear.pack(side=BOTTOM)
+        clear = Button(bf, text="Clear", command=self._clear)
+        clear.pack(side=LEFT)
         
     def _clear(self):
         self.d.delete('1.0', END)
@@ -81,7 +82,7 @@ class Search(object):
 
 #**************************************************************************
 class LBChoice(object):
-    '''This is a general list box and returning mechanism. Mostly for unarchiving.'''
+    '''This is a listbox for returning projects to be unarchived.'''
     def __init__(self, master=None, title=None, li=[]):
         '''Must have master, title is optional, li is too.'''
         self.m = master
@@ -192,18 +193,17 @@ class tsummary(object):
         #****
         self.f = Frame(self.mp)
         self.f.pack(side=BOTTOM)
-        #self.d = Text(self.mp, height=10, width=80, wrap=WORD, bg='sea green', spacing1=5) #Display
-        begf = Frame(self.mp)
-        begf.pack(side=TOP) #beginning
+        begf = Frame(self.mp) #beginning date
+        begf.pack(side=TOP)
         Label(begf, text='Begin: ').pack(side=LEFT)
         self.be = Entry(begf)
         self.be.pack(side=RIGHT)
-        endf = Frame(self.mp)
+        endf = Frame(self.mp)  #end date
         endf.pack(side=TOP)
         Label(endf, text='End:   ').pack(side=LEFT)
         self.ee = Entry(endf)
         self.ee.pack(side=RIGHT)
-        pf = Frame(self.mp)
+        pf = Frame(self.mp)  #project
         pf.pack(side=TOP)
         Label(pf, text='Project:').pack(side=LEFT)
         self.pe = Entry(pf)
@@ -244,7 +244,7 @@ class tsummary(object):
 
 #***********************************************************************
 class tsdisp(object):
-    '''Project time summary and list.'''
+    '''Project time summary and list of dates and times.'''
     def __init__(self, master, project):
         self.f = Frame(master, borderwidth=2)
         Label(self.f, text=project).pack(side=TOP)
@@ -271,11 +271,14 @@ class tsdisp(object):
         
 #***********************************************************************
 class projArea(object):
+    '''Main area for note taking and skimming. Also has time button.'''
     def __init__(self, mf, t, nc, th, path):
         self.nc = nc
         self.th = th
         self.t = t
         self.lock = 0
+        self.pdate = None
+        self.ptime = None
         self.f = Frame(mf, relief=RAISED, borderwidth=2)
         f2 = Frame(self.f)
         f2.pack()
@@ -291,7 +294,17 @@ class projArea(object):
         self.prev()
         self.entry = Text(self.f, width=80, height=10, bg='white', wrap=WORD)
         self.entry.bind("<Shift-Key-Return>", self.commit_note)
+        self.entry.bind("<Control-Key-Return>", self._refresh)
         self.f.pack()
+
+    def _update(self, date, time):
+        for row in self.nc.print_project(self.t, self.pdate, self.ptime):
+            s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
+            self.p.insert(END, s)
+        self.p.yview(END)
+        self.pdate = date
+        self.ptime = time
+        
         
     def prev(self):
         self.f1 = Frame(self.f)
@@ -301,9 +314,9 @@ class projArea(object):
         self.p.pack()
         self.p.config(yscrollcommand=scrollbar.set)
         scrollbar.config(command=self.p.yview)
-        self.uprev()
+        self._refresh()
                 
-    def uprev(self):
+    def _refresh(self, event=None):
         self.p.delete('1.0', END)
         for row in self.nc.print_project(self.t):
             s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
@@ -327,9 +340,12 @@ class projArea(object):
             self.lock = 0
         
     def commit_note(self, event):
-        self.nc.note_in(self.t, self.entry.get('1.0',END).strip(), None)
+        t = datetime.datetime.now() #time
+        d = int(t.strftime("%Y%m%d"))
+        t = int(t.strftime("%H%M"))
+        self.nc.note_in(self.t, self.entry.get('1.0',END).strip(), d, t)
         self.entry.delete('1.0', END)
-        self.uprev()
+        self._update(d, t)
             
     def close(self):
         self.nc.archive(self.t)
@@ -368,12 +384,14 @@ class noteGui(Frame):
         self.nc.set_archive()
         
     def nproject(self):
+        '''Starts a new project'''
         ans = tkSimpleDialog.askstring("Project", "New Project Name:", parent=self.m)
         if ans:
             if ans not in self.nc.get_all_projects():
                 self.d[ans] = projArea(self.f, ans, self.nc, self.th, self.path)
                 
     def oproject(self):
+        '''Opens a previously closed project.'''
         p = LBChoice(master=self.m, title='Open', li=self.nc.get_archive()).returnValue()
         if p == None:
             return
