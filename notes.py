@@ -179,6 +179,7 @@ class tsummary(object):
         self.b = None #beginning date
         self.e = None #end date
         self.p = None #project
+        self.r = IntVar() #to replace or not.
         self.d = {} #dictionary of projects
         if not self.m:
             return
@@ -193,12 +194,14 @@ class tsummary(object):
         self.f.pack(side=BOTTOM)
         begf = Frame(self.mp) #beginning date
         begf.pack(side=TOP)
-        Label(begf, text='Begin: ').pack(side=LEFT)
+        self.bl = Label(begf, text='Begin: ')  #Begin Label
+        self.bl.pack(side=LEFT)
         self.be = Entry(begf)
         self.be.pack(side=RIGHT)
         endf = Frame(self.mp)  #end date
         endf.pack(side=TOP)
-        Label(endf, text='End:   ').pack(side=LEFT)
+        self.el = Label(endf, text='End:   ') #End Label
+        self.el.pack(side=LEFT)
         self.ee = Entry(endf)
         self.ee.pack(side=RIGHT)
         pf = Frame(self.mp)  #project
@@ -208,10 +211,35 @@ class tsummary(object):
         self.pe.pack(side=RIGHT)
         bf = Frame(self.mp)
         bf.pack(side=TOP)
-        search = Button(bf, text="Search", command=self._search)
-        search.pack(side=LEFT)
+        self.sb = Button(bf, text="Search", command=self._search) #Search Button
+        self.sb.pack(side=LEFT)
         cancel = Button(bf, text="Cancel", command=self._cancel)
         cancel.pack(side=RIGHT)
+        Checkbutton(self.mp, text="Replace", variable=self.r,
+                    command=self._switch).pack(side=TOP)
+
+    def _switch(self, event=None):
+        '''Switches to the replacement view when checked and back
+        when unchecked.'''
+        if self.r == 1:
+            self.bl.config(text="Date: ")
+            self.el.config(text="New:  ")
+            self.sb.config(text="Replace", command=self._replace)
+        else:
+            self.bl.config(text="Begin: ")
+            self.el.config(text="End:   ")
+            self.sb.config(text="Search", command=self._search)
+
+    def _replace(self, event=None):
+        '''Gets date, new time and Project and replaces the time.'''
+        self.b = self.be.get() #Date
+        self.e = self.ee.get() #New time
+        self.p = self.pe.get() #project
+        if self.b == None or self.e == None or self.p == None:
+            print "Need all three."
+            return
+        self.th.update(self.p, self.e, self.b, replace=1)
+        
 
     def _search(self, event=None):
         self.b = self.be.get()
@@ -287,8 +315,8 @@ class projArea(object):
         pt = ptime(project=self.t, button=b, th=self.th, path=path)
         b.config(command=pt.click)
         Button(f2, text='X', command=self.close).pack(side=LEFT)
-        self.f.bind("<Enter>", self.ent)
-        self.f.bind("<Leave>", self.lv)
+        #self.f.bind("<Enter>", self.ent)
+        #self.f.bind("<Leave>", self.lv)
         self.prev()
         self.entry = Text(self.f, width=80, height=10, bg='white', wrap=WORD)
         self.entry.bind("<Shift-Key-Return>", self.commit_note)
@@ -321,12 +349,12 @@ class projArea(object):
             self.p.insert(END, s)
         self.p.yview(END)
         
-    def ent(self, event):
+    def ent(self): #, event):
         self.f1.pack()
         self.entry.pack()
         self.entry.focus_set()
             
-    def lv(self, event):
+    def lv(self): #, event):
         if self.lock == 0:
             self.f1.pack_forget()
             self.entry.pack_forget()
@@ -359,7 +387,10 @@ class noteGui(Frame):
         self.nc = ncore.noteCore(dbpath=self.path) #noteCore
         self.th = ncore.timehandler(dbpath=self.path)#timehandler
         self.d = {}
-        self.l = 0         #The listbox to unarchive.
+        self.sl = []  #ordered list of open projects.
+        self.focus = 0 #current opened
+        self.m.bind("<Shift-Button-5>", self._down)
+        self.m.bind("<Shift-Button-4>", self._up)
         self.fillmw()
         
     def fillmw(self):
@@ -373,9 +404,10 @@ class noteGui(Frame):
         menubar.add_command(label='Search', command=self.search)
         menubar.add_command(label='Time', command=self.time)
         self.m.config(menu=menubar)
-        un = self.nc.get_unarchived()
-        for u in un:
+        self.sl = self.nc.get_unarchived()
+        for u in self.sl:
             self.d[u] = projArea(self.f, u, self.nc, self.th, self.path)
+        self.focus = "Other"
         
     def save(self):
         self.nc.save()
@@ -394,6 +426,7 @@ class noteGui(Frame):
         if p == None:
             return
         self.d[p] = projArea(self.f, p, self.nc, self.th, self.path)
+        self.sl.append(p)
         self.nc.unarchive(p)
         
     def search(self):
@@ -401,6 +434,23 @@ class noteGui(Frame):
 
     def time(self):
         tsummary(th=self.th, master=self.m, title="Time")
+        
+    def _down(self, event):
+        self.d[self.focus].lv()
+        i = self.sl.index(self.focus) + 1
+        if i >= len(self.sl):
+            i = 0
+        self.focus = self.sl[i]
+        self.d[self.focus].ent()
+
+    def _up(self, event):
+        self.d[self.focus].lv()
+        i = self.sl.index(self.focus) - 1
+        if i < 0:
+            i = len(self.sl) - 1
+        self.focus = self.sl[i]
+        self.d[self.focus].ent()
+
 
 if len(sys.argv) < 2:
     print "Needs -path <path to db>"

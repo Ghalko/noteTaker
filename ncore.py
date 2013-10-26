@@ -114,7 +114,7 @@ class timehandler(object):
         else:
             if replace:
                 print "Replace not implemented"
-                #self.c.execute("REPLACE INTO times VALUES (?,?,?)"
+                self.c.execute("UPDATE times SET seconds=? WHERE project=? AND date=?", [time, project, date])
             else:
                 time = time + s[0]
                 self.c.execute("UPDATE times SET seconds=? WHERE project=? AND date=?", [time, project, date])
