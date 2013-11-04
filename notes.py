@@ -298,25 +298,26 @@ class tsdisp(object):
 #***********************************************************************
 class projArea(object):
     '''Main area for note taking and skimming. Also has time button.'''
-    def __init__(self, mf, t, nc, th, path):
-        self.nc = nc
-        self.th = th
+    def __init__(self, parent, t):
+        self.par = parent
+        self.nc = parent.nc
+        self.th = parent.th
         self.t = t
         self.lock = 0
         self.pdate = None
         self.ptime = None
-        self.f = Frame(mf, relief=RAISED, borderwidth=2)
+        self.f = Frame(parent.f, relief=RAISED, borderwidth=2)
         f2 = Frame(self.f)
         f2.pack()
         Button(f2, text='Lock', command=self.ul).pack(side=LEFT)
-        Label(f2, text=t, width=37, font=("Helvetica", 16)).pack(side=LEFT)
+        l = Label(f2, text=t, width=37, font=("Helvetica", 16))
+        l.pack(side=LEFT)
+        l.bind("<Button-1>", self._click)
         b = Button(f2)
         b.pack(side=LEFT)
         pt = ptime(project=self.t, button=b, th=self.th, path=path)
         b.config(command=pt.click)
         Button(f2, text='X', command=self.close).pack(side=LEFT)
-        #self.f.bind("<Enter>", self.ent)
-        #self.f.bind("<Leave>", self.lv)
         self.prev()
         self.entry = Text(self.f, width=80, height=10, bg='white', wrap=WORD)
         self.entry.bind("<Shift-Key-Return>", self.commit_note)
@@ -348,7 +349,10 @@ class projArea(object):
             s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
             self.p.insert(END, s)
         self.p.yview(END)
-        
+
+    def _click(self, event):
+        self.par.move(title=self.t)
+       
     def ent(self): #, event):
         self.f1.pack()
         self.entry.pack()
@@ -374,6 +378,7 @@ class projArea(object):
         self._update(d, t)
             
     def close(self):
+        self.par.rproject(self.t)
         self.nc.archive(self.t)
         self.f.pack_forget()
         self.f.destroy()
@@ -389,8 +394,8 @@ class noteGui(Frame):
         self.d = {}
         self.sl = []  #ordered list of open projects.
         self.focus = 0 #current opened
-        self.m.bind("<Shift-Button-5>", self._down)
-        self.m.bind("<Shift-Button-4>", self._up)
+        self.m.bind("<Shift-Button-5>", self.move)
+        self.m.bind("<Shift-Button-4>", self.move)
         self.fillmw()
         
     def fillmw(self):
@@ -406,7 +411,7 @@ class noteGui(Frame):
         self.m.config(menu=menubar)
         self.sl = self.nc.get_unarchived()
         for u in self.sl:
-            self.d[u] = projArea(self.f, u, self.nc, self.th, self.path)
+            self.d[u] = projArea(self, u)
         self.focus = "Other"
         
     def save(self):
@@ -418,39 +423,43 @@ class noteGui(Frame):
         ans = tkSimpleDialog.askstring("Project", "New Project Name:", parent=self.m)
         if ans:
             if ans not in self.nc.get_all_projects():
-                self.d[ans] = projArea(self.f, ans, self.nc, self.th, self.path)
+                self.d[ans] = projArea(self, ans)
                 
     def oproject(self):
         '''Opens a previously closed project.'''
         p = LBChoice(master=self.m, title='Open', li=self.nc.get_archive()).returnValue()
         if p == None:
             return
-        self.d[p] = projArea(self.f, p, self.nc, self.th, self.path)
+        self.d[p] = projArea(self, p)
         self.sl.append(p)
         self.nc.unarchive(p)
+
+    def rproject(self, title):
+        '''Removes project from project list, self.sl'''
+        self.sl.remove(title)
         
     def search(self):
         Search(self.m, 'Search', nc=self.nc)
 
     def time(self):
         tsummary(th=self.th, master=self.m, title="Time")
-        
-    def _down(self, event):
-        self.d[self.focus].lv()
-        i = self.sl.index(self.focus) + 1
-        if i >= len(self.sl):
-            i = 0
-        self.focus = self.sl[i]
-        self.d[self.focus].ent()
 
-    def _up(self, event):
+    def move(self, event=None, title=None):
         self.d[self.focus].lv()
-        i = self.sl.index(self.focus) - 1
-        if i < 0:
-            i = len(self.sl) - 1
-        self.focus = self.sl[i]
-        self.d[self.focus].ent()
-
+        i = 0
+        if event: #Shift+scroll
+            if event.num == 5: #Scroll down
+                i = self.sl.index(self.focus) + 1
+                if i >= len(self.sl):
+                    i = 0
+            elif event.num == 4: #Scroll up
+                i = self.sl.index(self.focus) - 1
+                if i < 0:
+                    i = len(self.sl) - 1
+        elif title: #Click
+            i = self.sl.index(title)
+        self.focus = self.sl[i] #Setting new focus
+        self.d[self.focus].ent() #Entering focus
 
 if len(sys.argv) < 2:
     print "Needs -path <path to db>"
