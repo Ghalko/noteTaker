@@ -461,24 +461,24 @@ class noteGui(Frame):
         self.focus = self.sl[i] #Setting new focus
         self.d[self.focus].ent() #Entering focus
 
-if len(sys.argv) < 2:
-    print "Needs -path <path to db>"
-    sys.exit()
+if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print "Needs -path <path to db>"
+        sys.exit()
 
-pflag = 0
-path = None
-for a in sys.argv:
-    if pflag:
-        path = str(a)
-        pflag = 0
-    elif str(a) == '-path':
-        pflag = 1
+    pflag = 0
+    path = None
+    for a in sys.argv:
+        if pflag:
+            path = str(a)
+            pflag = 0
+        elif str(a) == '-path':
+            pflag = 1
 
-if not path:
-    sys.exit()
+    if not path:
+        sys.exit()
 
-root = Tk()
-root.title("noteTaker")
-app = noteGui(master=root, path=path)
-app.mainloop()
-#root.destroy()
+    root = Tk()
+    root.title("noteTaker")
+    app = noteGui(master=root, path=path)
+    app.mainloop()
