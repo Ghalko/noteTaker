@@ -16,15 +16,19 @@ class DBTester(object):
         pass
 
     def randEntry(self):
-        pass
+        return -1
 
     def randTime(self):
-        pass
+        return -1
 
-    def input(self):
-        pass
+    def input(self): #inputs into text file and database
+        e = self.randEntry()
+        t = self.randTime()
+        #add to text file
+        #add to database
+        return
 
-    def search(self):
+    def search(self): #take a random word out of the text file and search
         pass
 
 class GUITester(object):

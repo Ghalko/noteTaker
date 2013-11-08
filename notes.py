@@ -284,11 +284,18 @@ class tsdisp(object):
 
     def append(self, date, time):
         self.t = self.t + time
-        s = str(date) + ': ' + str(time) + '\n'
+        hr = int(time/3600.)
+        mi = int((time - (hr*3600))/60.)
+        sec = time - ((hr * 3600) + (mi * 60))
+        s = str(date) + ': ' + str(hr) + ':' + str(mi) + ':' + str(sec) + '\n'
         self.disp.insert(END, s)
 
     def update(self):
-        self.l .config(text="Total: "+str(self.t))
+        hr = int(self.t/3600.)
+        mi = int((self.t - (hr*3600))/60.)
+        sec = self.t - ((hr * 3600) + (mi * 60))
+        t = str(hr) + ":" + str(mi) + ":" + str(sec)
+        self.l .config(text="Total: "+t)
         self.f.pack(side=LEFT)
 
     def clear(self):
@@ -370,10 +377,13 @@ class projArea(object):
             self.lock = 0
         
     def commit_note(self, event):
+        s = self.entry.get('1.0',END).strip()
+        if s == "":
+            return
         t = datetime.datetime.now() #time
         d = int(t.strftime("%Y%m%d"))
         t = int(t.strftime("%H%M"))
-        self.nc.note_in(self.t, self.entry.get('1.0',END).strip(), d, t)
+        self.nc.note_in(self.t, s, d, t)
         self.entry.delete('1.0', END)
         self._update(d, t)
             

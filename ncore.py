@@ -42,7 +42,7 @@ class noteCore(object):
         if date == None or time == None:
             return self.c.execute("SELECT * FROM notes WHERE project=?",
                                   (project,))
-        return self.c.execute("SELECT * FROM notes WHERE project=? AND date>=? AND time>?", [project, date, time])
+        return self.c.execute("SELECT * FROM notes WHERE project=? AND date >= ? AND time>?", [project, date, time])
         
     def save(self):
         '''Commits the database.'''
