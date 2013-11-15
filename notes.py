@@ -434,6 +434,7 @@ class noteGui(Frame):
         if ans:
             if ans not in self.nc.get_all_projects():
                 self.d[ans] = projArea(self, ans)
+                self.sl.append(ans)
                 
     def oproject(self):
         '''Opens a previously closed project.'''
