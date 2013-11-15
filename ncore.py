@@ -50,8 +50,14 @@ class noteCore(object):
     
     def note_in(self, project, text, date, time):
         '''Takes date, time, project, and text and submits it to the sql.'''
-        self.c.execute("INSERT INTO notes VALUES (?,?,?,?)",
-                       (date, time, project, text,))
+        self.c.execute("SELECT note FROM notes WHERE project=? AND date=? AND time=?", [project, date, time])
+        s = self.c.fetchone()
+        if s:
+            text = s[0] + '\n' + text #Adds text if the minute already exists.
+            self.c.execute("UPDATE notes SET note=? WHERE project=? AND date=? AND time=?", [text, project, date, time])
+        else:
+            self.c.execute("INSERT INTO notes VALUES (?,?,?,?)",
+                           [date, time, project, text])
         self.save()
         
     def get_all_projects(self):
