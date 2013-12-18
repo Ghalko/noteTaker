@@ -96,7 +96,7 @@ class noteCore(object):
         self.a.remove(p)
         self.set_archive()
 
-#*************************************************************************
+#* Time Handling *********************************************************
 class timehandler(object):
     '''Facilitates tracking time and displaying time tracked via sql.'''
     def __init__(self, dbpath=None):
