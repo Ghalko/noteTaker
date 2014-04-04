@@ -16,6 +16,10 @@ class Search(object):
         self.e = None #end date
         self.p = None #project
         self.s = None #search term
+        self.build_search(master, title)
+        
+
+    def build_search(self, master, title):
         self.mp = Toplevel(master)
         self.mp.transient(master)
         self.mp.bind("<Return>", self._search)
@@ -25,15 +29,16 @@ class Search(object):
         f = Frame(self.mp)         #Sets up the fields.
         f.pack(side=LEFT)
         self.d = Text(self.mp, height=10, width=80, wrap=WORD,
-                      bg='sea green', spacing1=5) #Display
+                      bg="#009999", spacing1=5) #Display
+        self.d.pack(side=RIGHT)
         begf = Frame(self.mp) #beginning date (inclusive)
         begf.pack(side=TOP)
-        Label(begf, text='Begin: ').pack(side=LEFT)
+        Label(begf, text='Begin:  ').pack(side=LEFT)
         self.be = Entry(begf)
         self.be.pack(side=RIGHT)
         endf = Frame(self.mp) #ending date (inclusive)
         endf.pack(side=TOP)
-        Label(endf, text='End:   ').pack(side=LEFT)
+        Label(endf, text='End:    ').pack(side=LEFT)
         self.ee = Entry(endf)
         self.ee.pack(side=RIGHT)
         pf = Frame(self.mp) #project
@@ -57,6 +62,7 @@ class Search(object):
         self.d.pack_forget()
         
     def _search(self, event=None):
+        self.d.delete('1.0', END)
         self.b = self.be.get()
         self.e = self.ee.get()
         self.p = self.pe.get()
@@ -138,7 +144,7 @@ class projArea(object):
         self.move = parent.move         #Move function
         self.nc = parent.nc
         self.t = title
-        self.tcmd = tcmd
+        self.tcmd = tcmd #passed in from timehandler
         self.lock = 0
         self.going = PhotoImage(file=path+"/going.gif")
         self.stopped = PhotoImage(file=path+"/stopped.gif")
@@ -147,8 +153,7 @@ class projArea(object):
         self.f = Frame(parent.f, relief=RAISED, borderwidth=2)
         f2 = Frame(self.f)
         f2.pack()
-        Button(f2, text='Lock', command=self.ul).pack(side=LEFT)
-        l = Label(f2, text=title, width=37, font=("Helvetica", 16))
+        l = Label(f2, text=title, width=42, font=("Helvetica", 16))
         l.pack(side=LEFT)
         l.bind("<Button-1>", self._click)
         self.b = Button(f2, image=self.stopped, command=self._timer)
@@ -197,12 +202,6 @@ class projArea(object):
         if self.lock == 0:
             self.f1.pack_forget()
             self.entry.pack_forget()
-            
-    def ul(self):
-        if self.lock == 0:
-            self.lock = 1
-        else:
-            self.lock = 0
         
     def commit_note(self, event):
         s = self.entry.get('1.0',END).strip()
@@ -212,10 +211,13 @@ class projArea(object):
         d = int(t.strftime("%Y%m%d"))
         t = int(t.strftime("%H%M"))
         self.nc.note_in(self.t, s, d, t)
-        self.entry.delete('1.0', END)
+        self.entry.delete('0.0', END)
+        self.entry.mark_set("insert", "%d.%d" % (1, 0))
         self._update(d, t)
 
     def _timer(self):
+        '''Timer button. Calls tcmd to start or stop the timer. Switches the
+        images.'''
         temp = self.tcmd()
         if temp:
             self.b.config(image=self.going)

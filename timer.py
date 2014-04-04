@@ -27,41 +27,53 @@ class tsummary(object):
         self.f.pack(side=BOTTOM)
         begf = Frame(self.mp) #beginning date
         begf.pack(side=TOP)
-        self.bl = Label(begf, text='Begin: ')  #Begin Label
-        self.bl.pack(side=LEFT)
+        self.bvar = StringVar()
+        self.bvar.set('Begin:')
+        Label(begf, textvariable=self.bvar,
+              width=8).pack(side=LEFT)
         self.be = Entry(begf)
         self.be.pack(side=RIGHT)
         endf = Frame(self.mp)  #end date
         endf.pack(side=TOP)
-        self.el = Label(endf, text='End:   ') #End Label
-        self.el.pack(side=LEFT)
+        self.evar = StringVar()
+        self.evar.set('End:')
+        Label(endf, textvariable=self.evar,width=8).pack(side=LEFT)
         self.ee = Entry(endf)
         self.ee.pack(side=RIGHT)
         pf = Frame(self.mp)  #project
         pf.pack(side=TOP)
-        Label(pf, text='Project:').pack(side=LEFT)
+        Label(pf, text='Project:', width=8).pack(side=LEFT)
         self.pe = Entry(pf)
         self.pe.pack(side=RIGHT)
         bf = Frame(self.mp)
         bf.pack(side=TOP)
-        self.sb = Button(bf, text="Search", command=self._search) #Search Button
-        self.sb.pack(side=LEFT)
+        self.svar = StringVar()
+        self.svar.set('Search')
+        Button(bf, textvariable=self.svar, width=9,
+               command=self._decide).pack(side=LEFT)
         cancel = Button(bf, text="Cancel", command=self._cancel)
         cancel.pack(side=RIGHT)
         Checkbutton(self.mp, text="Replace", variable=self.r,
-                    command=self._switch).pack(side=TOP)
+                    command=self._switch, onvalue=1, offvalue=0).pack(side=TOP)
 
     def _switch(self, event=None):
         '''Switches to the replacement view when checked and back
         when unchecked.'''
-        if self.r == 1:
-            self.bl.config(text="Date: ")
-            self.el.config(text="New:  ")
-            self.sb.config(text="Replace", command=self._replace)
+        if self.r.get() == 1:
+            self.bvar.set('Date:')
+            self.evar.set('New:')
+            self.svar.set('Replace')
         else:
-            self.bl.config(text="Begin: ")
-            self.el.config(text="End:   ")
-            self.sb.config(text="Search", command=self._search)
+            self.bvar.set('Begin:')
+            self.evar.set('End:')
+            self.svar.set('Search')
+        self.m.update_idletasks()
+
+    def _decide(self, event=None):
+        if self.r.get() == 1:
+            self._replace()
+        else:
+            self._search()
 
     def _replace(self, event=None):
         '''Gets date, new time and Project and replaces the time.'''
@@ -71,6 +83,9 @@ class tsummary(object):
         if self.b == None or self.e == None or self.p == None:
             print "Need all three."
             return
+        if self.e.find(':') > 0: #Time given in hh:mm:ss
+            l = self.e.split(":")
+            self.e = int(l[0])*3600 + int(l[1])*60 + int(l[2])
         self.th.update(self.p, self.e, self.b, replace=1)
         
 
@@ -133,6 +148,7 @@ class tsdisp(object):
 
     def clear(self):
         self.disp.delete('1.0', END)
+        self.t = 0
         self.f.pack_forget()
 
 #* Project Timer *******************************************************

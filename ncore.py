@@ -119,7 +119,6 @@ class timehandler(object):
             self.c.execute("INSERT INTO times VALUES (?,?,?)", [project, date, time])
         else:
             if replace:
-                print "Replace not implemented"
                 self.c.execute("UPDATE times SET seconds=? WHERE project=? AND date=?", [time, project, date])
             else:
                 time = time + s[0]
