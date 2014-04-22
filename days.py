@@ -66,6 +66,9 @@ class Days(Frame):
         self.frame.pack()
         Button(self.frame.interior, text="More", command=self._more).pack()
 
+    def add(self):
+        pass
+
     def _more(self, event=None):
         """Adds 3 more days to the beginning of the list."""
         tlist = []
@@ -83,7 +86,9 @@ class Days(Frame):
     def _repack(self):
         for day in self.days:
             day.gui_pack()
-        self.days[-1].text.yview(END)
+        self.days[-1].text.config(height=10) #For better entry.
+        self.days[-1].text.yview(END) #maybe make these two statements
+        #a decorator
 
 
 class Day(object):
@@ -96,9 +101,13 @@ class Day(object):
         """Fills gui."""
         self.text = Text(self.p.frame.interior, height=10, width=77,
                          wrap=WORD, bg='light blue', spacing1=5)
+        lines = 0
         for row in self.p.nc.print_project_day(self.p.project, self.date):
             s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
             self.text.insert(END, s)
+            lines += self.count_lines(s)
+        if lines < 10:
+            self.text.config(height=lines+1)
 
     def gui_forget(self):
         """For pack forgetting"""
@@ -107,6 +116,17 @@ class Day(object):
     def gui_pack(self):
         """For packing"""
         self.text.pack()
+
+    def count_lines(self, s):
+        lines = s.split("\n")
+        count = len(lines) - 1
+        for row in lines:
+            l = len(row)/77
+            if l < 1.0:
+                continue
+            count += int(l)
+        return count
+            
 
 if __name__=="__main__":
     path = "/home/bgorges/Tools/noteTaker"
