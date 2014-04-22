@@ -39,10 +39,16 @@ class noteCore(object):
     
     def print_project(self, project, date=None, time=None):
         '''Returns a project (date and time optional)'''
-        if date == None or time == None:
+        if date == None and time == None:
             return self.c.execute("SELECT * FROM notes WHERE project=?",
                                   (project,))
+        if date!=None and time==None:
+            return self.c.execute("SELECT * FROM notes WHERE project=? AND date >= ?", [project, date])
         return self.c.execute("SELECT * FROM notes WHERE project=? AND date >= ? AND time>?", [project, date, time])
+
+    def print_project_day(self, project, date):
+        return self.c.execute("SELECT * FROM notes WHERE project=? AND date=?",
+                              [project, date])
         
     def save(self):
         '''Commits the database.'''
@@ -50,11 +56,14 @@ class noteCore(object):
     
     def note_in(self, project, text, date, time):
         '''Takes date, time, project, and text and submits it to the sql.'''
-        self.c.execute("SELECT note FROM notes WHERE project=? AND date=? AND time=?", [project, date, time])
+        q = """SELECT note FROM notes WHERE project=? AND date=? AND time=?"""
+        self.c.execute(q, [project, date, time])
         s = self.c.fetchone()
         if s:
             text = s[0] + '\n' + text #Adds text if the minute already exists.
-            self.c.execute("UPDATE notes SET note=? WHERE project=? AND date=? AND time=?", [text, project, date, time])
+            q = """UPDATE notes
+SET note=? WHERE project=? AND date=? AND time=?"""
+            self.c.execute(q, [text, project, date, time])
         else:
             self.c.execute("INSERT INTO notes VALUES (?,?,?,?)",
                            [date, time, project, text])
@@ -63,6 +72,16 @@ class noteCore(object):
     def get_all_projects(self):
         '''Returns a list of distinct projects.'''
         return [r[0] for r in self.c.execute("SELECT DISTINCT project FROM notes")]
+
+    def get_all_dates(self, project=None):
+        '''Returns a list of all distinct dates'''
+        if project:
+            self.c.execute("SELECT DISTINCT date FROM notes WHERE project=?",
+                           [project])
+            return [r[0] for r in self.c.fetchall()]
+        else:
+            self.c.execute("SELECT DISTINCT date FROM notes")
+            return [r[0] for r in self.c.fetchall()]
 
 #* Archived project handling **********************************************
     def load_archive(self):
