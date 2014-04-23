@@ -66,6 +66,7 @@ class Days(object):
 
     def append(self, date):
         self.days.append(Day(self, date))
+        self._repack()
 
     def get_current(self):
         return self.days[-1]
