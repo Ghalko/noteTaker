@@ -36,15 +36,6 @@ class noteCore(object):
             return self.c.execute("SELECT date,time,note FROM notes WHERE note LIKE ? AND project=?", ['%'+s+'%', project])
         else:
             return self.c.execute("SELECT project,date,time,note FROM notes WHERE note LIKE ?", ['%'+s+'%'])
-    
-    def print_project(self, project, date=None, time=None):
-        '''Returns a project (date and time optional)'''
-        if date == None and time == None:
-            return self.c.execute("SELECT * FROM notes WHERE project=?",
-                                  (project,))
-        if date!=None and time==None:
-            return self.c.execute("SELECT * FROM notes WHERE project=? AND date >= ?", [project, date])
-        return self.c.execute("SELECT * FROM notes WHERE project=? AND date >= ? AND time>?", [project, date, time])
 
     def print_project_day(self, project, date):
         return self.c.execute("SELECT * FROM notes WHERE project=? AND date=?",

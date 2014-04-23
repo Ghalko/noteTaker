@@ -1,7 +1,8 @@
 import tkSimpleDialog
 from Tkinter import *
 import ncore  #note core sql
-import timer  #Timer 
+import timer  #Timer
+from days import Days #main display idea.
 import sys
 import datetime
 
@@ -149,7 +150,6 @@ class projArea(object):
         self.going = PhotoImage(file=path+"/going.gif")
         self.stopped = PhotoImage(file=path+"/stopped.gif")
         self.pdate = None
-        self.ptime = None
         self.f = Frame(parent.f, relief=RAISED, borderwidth=2)
         f2 = Frame(self.f)
         f2.pack()
@@ -160,35 +160,15 @@ class projArea(object):
         self.b.pack(side=LEFT)
         Button(f2, text='X', command=self.close).pack(side=LEFT)
         self.prev()
-        self.entry = Text(self.f, width=80, height=10, bg='white', wrap=WORD)
+        self.entry = Text(self.f1, width=80, height=10, bg='white', wrap=WORD)
         self.entry.bind("<Shift-Key-Return>", self.commit_note)
-        self.entry.bind("<Control-Key-Return>", self._refresh)
+        self.entry.bind("<Control-Key-Return>", self.p.gui_refresh)
         self.f.pack()
-
-    def _update(self, date, time):
-        for row in self.nc.print_project(self.t, self.pdate, self.ptime):
-            s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
-            self.p.insert(END, s)
-        self.p.yview(END)
-        self.pdate = date
-        self.ptime = time
         
     def prev(self):
         self.f1 = Frame(self.f)
-        scrollbar = Scrollbar(self.f1)
-        scrollbar.pack(side=RIGHT, fill=Y)
-        self.p = Text(self.f1, height=10, width=77, wrap=WORD, bg='light blue', spacing1=5)
-        self.p.pack()
-        self.p.config(yscrollcommand=scrollbar.set)
-        scrollbar.config(command=self.p.yview)
-        self._refresh()
-                
-    def _refresh(self, event=None):
-        self.p.delete('1.0', END)
-        for row in self.nc.print_project(self.t):
-            s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
-            self.p.insert(END, s)
-        self.p.yview(END)
+        self.days = Days(master=self.f1, nc=self.nc, project=self.t)
+        self.p = self.days.get_current()
 
     def _click(self, event):
         self.move(title=self.t)
@@ -213,7 +193,11 @@ class projArea(object):
         self.nc.note_in(self.t, s, d, t)
         self.entry.delete('0.0', END)
         self.entry.mark_set("insert", "%d.%d" % (1, 0))
-        self._update(d, t)
+        if d == self.p.date:
+            self.p.gui_refresh()
+        else:
+            self.days.append(d)
+            self.p = self.days.get_current()
 
     def _timer(self):
         '''Timer button. Calls tcmd to start or stop the timer. Switches the

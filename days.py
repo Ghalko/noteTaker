@@ -45,8 +45,8 @@ class VerticalScrolledFrame(Frame):
                 canvas.itemconfigure(interior_id, width=canvas.winfo_width())
         canvas.bind('<Configure>', _configure_canvas)
 
-class Days(Frame):
-    def __init__(self, master=None, nc=None, project=None, limit=3):
+class Days(object):
+    def __init__(self, master=None, nc=None, project=None, limit=2):
         self.m = master
         self.nc = nc
         self.project=project
@@ -56,18 +56,19 @@ class Days(Frame):
         limit = (limit+1) *-1 #Gets the previous two days and this one.
         l = sorted(self.nc.get_all_dates(project))[limit:]
         for day in l:
-            self.days.append(Day(self, day))
+            self.append(day) #uses Days append
         self._repack()
     
     def gui_fill(self):
-        self.f = Frame.__init__(self, self.m)
-        self.pack()
-        self.frame = VerticalScrolledFrame(self.f)
+        self.frame = VerticalScrolledFrame(self.m)
         self.frame.pack()
         Button(self.frame.interior, text="More", command=self._more).pack()
 
-    def add(self):
-        pass
+    def append(self, date):
+        self.days.append(Day(self, date))
+
+    def get_current(self):
+        return self.days[-1]
 
     def _more(self, event=None):
         """Adds 3 more days to the beginning of the list."""
@@ -95,6 +96,7 @@ class Day(object):
     def __init__(self, parent=None, date=None):
         self.date = date
         self.p = parent
+        self.entry = 0
         self.gui_fill()
 
     def gui_fill(self):
@@ -117,6 +119,19 @@ class Day(object):
         """For packing"""
         self.text.pack()
 
+    def gui_refresh(self, event=None):
+        self.text.delete('1.0', END)
+        for row in self.p.nc.print_project_day(self.p.project, self.date):
+            s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[3]) + '\n'
+            self.text.insert(END, s)
+        self.text.yview(END)
+
+    def toggle_entry(self):
+        if self.entry:
+            self.entry = 0
+        else:
+            self.entry = 1
+
     def count_lines(self, s):
         lines = s.split("\n")
         count = len(lines) - 1
@@ -126,12 +141,18 @@ class Day(object):
                 continue
             count += int(l)
         return count
+
+class Test(Frame):
+    def __init__(self, master=None, nc=None, project="Other", limit=2):
+        self.frame = Frame.__init__(self, master)
+        self.pack()
+        Days(master=master, nc=nc, project=project, limit=limit)
             
 
 if __name__=="__main__":
     path = "/home/bgorges/Tools/noteTaker"
     root = Tk()
     nc = ncore.noteCore(dbpath=path)
-    app = Days(master=root, nc=nc, project="Other", limit=2)
+    app = Test(master=root, nc=nc, project="Other", limit=2)
     app.mainloop()
     
