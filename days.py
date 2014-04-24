@@ -5,6 +5,7 @@ from Tkinter import (Tk, Frame, Scrollbar, Canvas, Button, Text, WORD, BOTH,
                      VERTICAL, END, Y, NW, RIGHT, LEFT, FALSE, TRUE)
 import ncore
 import utils
+import datetime
 
 class VerticalScrolledFrame(Frame):
     """A pure Tkinter scrollable frame that actually works!
@@ -59,6 +60,9 @@ class Days(object):
         self.limit = limit
         limit = (limit+1) *-1 #Gets the previous two days and this one.
         list_ = sorted(self.ncore.get_all_dates(project))[limit:]
+        if list_ == []:
+            day = int(datetime.datetime.now().strftime("%Y%m%d"))
+            self.append(day)
         for day in list_:
             self.append(day) #uses Days append
         self._repack()
