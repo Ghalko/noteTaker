@@ -90,23 +90,28 @@ class tsummary(object):
         
 
     def _search(self, event=None):
-        self.b = self.be.get()
-        self.e = self.ee.get()
-        self.p = self.pe.get()
+        self.b = self.be.get().strip()
+        self.e = self.ee.get().strip()
+        self.p = self.pe.get().strip()
         for e in self.d:
             self.d[e].clear()
-        if self.b:
+        if self.b != "":
             self.b = int(self.b)
-        if self.e:
+        else:
+            self.b = None
+        if self.e != "":
             self.e = int(self.e)
+        else:
+            self.e = None
         if self.p:
             if self.p not in self.d:
                 self.d[self.p] = tsdisp(self.f, self.p)
-            for row in self.th.ret_notes(self.b, self.e, self.p):
+            for row in self.th.ret_notes(b_date=self.b, e_date=self.e,
+                                         project=self.p):
                 self.d[self.p].append(row[0], row[1])
             self.d[self.p].update()
         else:
-            for row in self.th.ret_notes(self.b, self.e, self.p):
+            for row in self.th.ret_notes(b_date=self.b, e_date=self.e):
                 if row[0] not in self.d:
                     self.d[row[0]] = tsdisp(self.f, row[0])
                 self.d[row[0]].append(row[1], row[2])

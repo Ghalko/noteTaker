@@ -1,5 +1,7 @@
 import tkSimpleDialog
-from Tkinter import *
+from Tkinter import (Tk, Menu, Frame, Label, Button, PhotoImage, Text, Entry,
+                     Scrollbar, Toplevel, Listbox, RAISED, RIGHT, LEFT, WORD,
+                     Y, END, BOTTOM, TOP, X, SINGLE)
 import ncore  #note core sql
 import timer  #Timer
 from days import Days #main display idea.
@@ -13,12 +15,11 @@ class Search(object):
         if master == None or nc == None:
             return
         self.nc = nc #ncore, the database to search through
-        self.b = None #beginning date
-        self.e = None #end date
-        self.p = None #project
-        self.s = None #search term
+        self.beg = None #beginning date
+        self.end = None #end date
+        self.pro = None #project
+        self.search = None #search term
         self.build_search(master, title)
-        
 
     def build_search(self, master, title):
         self.mp = Toplevel(master)
@@ -57,28 +58,36 @@ class Search(object):
         cancel.pack(side=RIGHT)
         clear = Button(bf, text="Clear", command=self._clear)
         clear.pack(side=LEFT)
-        
+
     def _clear(self):
         self.d.delete('1.0', END)
-        self.d.pack_forget()
-        
+
     def _search(self, event=None):
         self.d.delete('1.0', END)
-        self.b = self.be.get()
-        self.e = self.ee.get()
-        self.p = self.pe.get()
-        self.s = self.se.get()
-        if self.b:
-            self.b = int(self.b)
-        if self.e:
-            self.e = int(self.e)
-        if self.p:
-            for row in self.nc.ret_notes(self.s, self.b, self.e, self.p):
+        self.beg = self.be.get().strip()
+        self.end = self.ee.get().strip()
+        self.pro = self.pe.get().strip()
+        self.search = self.se.get() #can search for things with trailing spaces.
+        if self.search == "":
+            self.d.insert(END, "None")
+        if self.beg != "":
+            self.beg = int(self.beg)
+        else:
+            self.beg = None
+        if self.end != "":
+            self.end = int(self.end)
+        else:
+            self.end = None
+        if self.pro != "":
+            for row in self.nc.ret_notes(search=self.search, b_date=self.beg,
+                                         e_date=self.end, project=self.pro):
                 s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[2]) + '\n'
                 self.d.insert(END, s)
         else:
-            for row in self.nc.ret_notes(self.s, self.b, self.e, self.p):
-                s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[2]) + ' ' + str(row[3]) + '\n'
+            for row in self.nc.ret_notes(search=self.search, b_date=self.beg,
+                                         e_date=self.end):
+                s = str(str(row[0]) + ' ' + str(row[1]) + ' ' +
+                        str(row[2]) + ' ' + str(row[3]) + '\n')
                 self.d.insert(END, s)
         self.d.pack(side=RIGHT)
 
@@ -88,57 +97,61 @@ class Search(object):
 #**************************************************************************
 class LBChoice(object):
     '''This is a listbox for returning projects to be unarchived.'''
-    def __init__(self, master=None, title=None, li=[]):
+    def __init__(self, list_=None, master=None, title=None):
         '''Must have master, title is optional, li is too.'''
-        self.m = master
-        self.v = None
-        self.l = li[:]
-        if self.m:
-            self.mp = Toplevel(self.m)
+        self.master = master
+        if self.master is not None:
+            self.top = Toplevel(self.master)
         else:
             return
-        self.mp.transient(self.m)
-        self.mp.grab_set()
-        self.mp.bind("<Return>", self._choose)
-        self.mp.bind("<Escape>", self._cancel)
+        self.v = None
+        if list_ is None or not isinstance(list_, list):
+            self.list = []
+        else:
+            self.list = list_[:]
+        self.top.transient(self.master)
+        self.top.grab_set()
+        self.top.bind("<Return>", self._choose)
+        self.top.bind("<Escape>", self._cancel)
         if title:
-            self.mp.title(title)
-        lf = Frame(self.mp)         #Sets up the list.
+            self.top.title(title)
+        lf = Frame(self.top)         #Sets up the list.
         lf.pack(side=TOP)
-        scrollBar = Scrollbar(lf)
-        scrollBar.pack(side=RIGHT, fill=Y)
+        scroll_bar = Scrollbar(lf)
+        scroll_bar.pack(side=RIGHT, fill=Y)
         self.lb = Listbox(lf, selectmode=SINGLE)
         self.lb.pack(side=LEFT, fill=Y)
-        scrollBar.config(command=self.lb.yview)
-        self.lb.config(yscrollcommand=scrollBar.set)
-        self.l.sort()
-        for item in self.l:
+        scroll_bar.config(command=self.lb.yview)
+        self.lb.config(yscrollcommand=scroll_bar.set)
+        self.list.sort()
+        for item in self.list:
             self.lb.insert(END, item)     #Inserts items into the list.
-        bf = Frame(self.mp)
+        bf = Frame(self.top)
         bf.pack(side=BOTTOM)
         choose = Button(bf, text="Select", command=self._choose)
         choose.pack(side=LEFT)
         cancel = Button(bf, text="Cancel", command=self._cancel)
         cancel.pack(side=RIGHT)
-        
+
     def _choose(self, event=None):
         try:
-            firstIndex = self.lb.curselection()[0]
-            self.v = self.l[int(firstIndex)]
+            first = self.lb.curselection()[0]
+            self.v = self.list[int(first)]
         except IndexError:
             self.v = None
-        self.mp.destroy()
+        self.top.destroy()
 
     def _cancel(self, event=None):
-        self.mp.destroy()
+        self.top.destroy()
         return None
-        
-    def returnValue(self):
-        self.m.wait_window(self.mp)
+
+    def return_value(self):
+        self.master.wait_window(self.top)
         return self.v
 
+
 #***********************************************************************
-class projArea(object):
+class ProjectArea(object):
     '''Main area for note taking and skimming. Also has time button.'''
     def __init__(self, parent, title, tcmd):
         self.remove = parent.rproject   #Remove function
@@ -164,27 +177,27 @@ class projArea(object):
         self.entry.bind("<Shift-Key-Return>", self.commit_note)
         self.entry.bind("<Control-Key-Return>", self.p.gui_refresh)
         self.f.pack()
-        
+
     def prev(self):
         self.f1 = Frame(self.f)
-        self.days = Days(master=self.f1, nc=self.nc, project=self.t)
+        self.days = Days(master=self.f1, ncore=self.nc, project=self.t)
         self.p = self.days.get_current()
 
     def _click(self, event):
         self.move(title=self.t)
-       
+
     def ent(self): #, event):
         self.f1.pack()
         self.entry.pack()
         self.entry.focus_set()
-            
+
     def lv(self): #, event):
         if self.lock == 0:
             self.f1.pack_forget()
             self.entry.pack_forget()
-        
+
     def commit_note(self, event):
-        s = self.entry.get('1.0',END).strip()
+        s = self.entry.get('1.0', END).strip()
         if s == "":
             return
         t = datetime.datetime.now() #time
@@ -214,16 +227,17 @@ class projArea(object):
         self.nc.archive(self.t)
         self.f.pack_forget()
         self.f.destroy()
-        
+
+
 #*********************************************************************
-class noteGui(Frame):
+class NoteGUI(Frame):
     def __init__(self, master=None, path=None):
         master.protocol("WM_DELETE_WINDOW", self.exit)
         self.m = master
         self.path = path
         self.f = Frame.__init__(self, master)
         self.pack()
-        self.nc = ncore.noteCore(dbpath=self.path) #noteCore
+        self.nc = ncore.NoteCore(dbpath=self.path) #noteCore
         self.t = timer.Timer(self.path)
         self.d = {}
         self.sl = []  #ordered list of open projects.
@@ -231,7 +245,7 @@ class noteGui(Frame):
         self.m.bind("<Shift-Button-5>", self.move)
         self.m.bind("<Shift-Button-4>", self.move)
         self.fillmw()
-        
+
     def fillmw(self):
         menubar = Menu(self.f)
         # create a pulldown menu, and add it to the menu bar
@@ -246,16 +260,16 @@ class noteGui(Frame):
         self.sl = self.nc.get_unarchived()
         for u in self.sl:
             t = self.t.newtimer(u)
-            self.d[u] = projArea(self, u, t)
+            self.d[u] = ProjectArea(self, u, t)
         self.focus = "Other"
 
     def exit(self):
         self.m.destroy()
-        
+
     def save(self):
         self.nc.save()
         self.nc.set_archive()
-        
+
     def nproject(self):
         '''Starts a new project'''
         ans = tkSimpleDialog.askstring("Project", "New Project Name:",
@@ -263,24 +277,24 @@ class noteGui(Frame):
         if ans:
             if ans not in self.nc.get_all_projects():
                 t = self.t.newtimer(ans)
-                self.d[ans] = projArea(self, ans, t)
+                self.d[ans] = ProjectArea(self, ans, t)
                 self.sl.append(ans)
-                
+
     def oproject(self):
         '''Opens a previously closed project.'''
-        p = LBChoice(master=self.m, title='Open',
-                     li=self.nc.get_archive()).returnValue()
+        p = LBChoice(self.nc.get_archive(), master=self.m,
+                     title='Open').return_value()
         if p == None:
             return
         t = self.t.newtimer(p)
-        self.d[p] = projArea(self, p, t)
+        self.d[p] = ProjectArea(self, p, t)
         self.sl.append(p)
         self.nc.unarchive(p)
 
     def rproject(self, title):
         '''Removes project from project list, self.sl'''
         self.sl.remove(title)
-        
+
     def search(self):
         Search(self.m, 'Search', nc=self.nc)
 
@@ -323,5 +337,5 @@ if __name__ == "__main__":
 
     root = Tk()
     root.title("noteTaker")
-    app = noteGui(master=root, path=path)
+    app = NoteGUI(master=root, path=path)
     app.mainloop()
