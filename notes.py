@@ -224,7 +224,7 @@ class ProjectArea(object):
 
     def close(self):
         self.remove(self.t)
-        self.nc.archive(self.t)
+        self.nc.archive_project(self.t)
         self.f.pack_forget()
         self.f.destroy()
 

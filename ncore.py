@@ -3,14 +3,16 @@
 import sqlite3
 
 class NoteCore(object):
-    """Deals with individual notes and projects through a sql interface"""
+    """Open sql database. Provide functions to read and write.
+    Main functionality note_in and ret_notes.
+    """
     def __init__(self, dbpath=None):
         if dbpath:
-            self.db = dbpath
+            self.dbpath = dbpath
         else:
             print "Need path to database directory."
             return
-        self.conn = sqlite3.connect(self.db + "/db/notes.db")
+        self.conn = sqlite3.connect(self.dbpath + "/db/notes.db")
         self.conn.text_factory = str
         self.cur = self.conn.cursor()
         self.archive = []
@@ -18,12 +20,17 @@ class NoteCore(object):
         query = "CREATE TABLE notes (date INTEGER, time INTEGER, project, note)"
         try:
             self.cur.execute(query)
-        except sqlite3.Error, e:
-            print "--- %s:" % e.args[0]
+        except sqlite3.Error, error:
+            print "--- %s:" % error.args[0]
 
     def ret_notes(self, search=None, b_date=None, e_date=None,
                   project=None, date=None, time=None):
-        """Takes a search, (beginning, end, and project optional)"""
+        """Take optional arguments, build query and return results.
+        - search - term to search for in notes
+        - b_date, e_date - beggining and ending date
+        - project - title
+        - date, time - specific date and/or time
+        """
         query = "SELECT"
         qlist = []
         search_str = "WHERE"
@@ -66,14 +73,15 @@ class NoteCore(object):
         return self.cur.execute(query, qlist)
 
     def print_project_day(self, project, date):
+        """Return specific day from a project."""
         return self.ret_notes(project=project, date=date)
 
     def save(self):
-        '''Commits the database.'''
+        '''Commit the database.'''
         self.conn.commit()
 
     def note_in(self, project, text, date, time):
-        '''Takes date, time, project, and text and submits it to the sql.'''
+        '''Take project, text, date, time and submit it to the database.'''
         previous = self.ret_notes(project=project, date=date, time=time)
         prev_note = previous.fetchone()
         if prev_note is not None:
@@ -87,12 +95,12 @@ WHERE project=? AND date=? AND time=?"""
         self.save()
 
     def get_all_projects(self):
-        '''Returns a list of distinct projects.'''
+        '''Return a list of distinct projects.'''
         query = "SELECT DISTINCT project FROM notes"
         return [r[0] for r in self.cur.execute(query)]
 
     def get_all_dates(self, project=None):
-        '''Returns a list of all distinct dates'''
+        '''Return a list of all distinct dates'''
         if project is not None:
             self.cur.execute("SELECT DISTINCT date FROM notes WHERE project=?",
                            [project])
@@ -103,56 +111,63 @@ WHERE project=? AND date=? AND time=?"""
 
 #* Archived project handling **********************************************
     def load_archive(self):
-        f = open(self.db + '/db/archive.txt', 'r')
-        for line in f:
-            self.archive.append(line.strip())
-        f.close()
+        """Load archived project titles from text file."""
+        with open(self.dbpath + '/db/archive.txt', 'r') as open_file:
+            for line in open_file:
+                self.archive.append(line.strip())
 
     def get_archive(self):
+        """Return archive list."""
         return self.archive
 
     def get_unarchived(self):
+        """Return list of unarchived projects."""
         ans = []
-        for p in self.get_all_projects():
-            if p not in self.archive:
-                ans.append(p)
+        for project in self.get_all_projects():
+            if project not in self.archive:
+                ans.append(project)
         return ans
 
     def set_archive(self):
-        f = open(self.db + '/db/archive.txt', 'w')
-        for i in self.archive:
-            i = i + '\n'
-            f.write(i)
-        f.close()
+        """Write archive to file."""
+        with open(self.dbpath + '/db/archive.txt', 'w') as open_file:
+            for i in self.archive:
+                i = i + '\n'
+                open_file.write(i)
 
-    def archive(self, p):
-        self.archive.append(p)
+    def archive_project(self, project):
+        """Append project to archive list and save archive."""
+        self.archive.append(project)
         self.set_archive()
 
-    def unarchive(self, p):
-        self.archive.remove(p)
+    def unarchive(self, project):
+        """Removes title from archive list."""
+        self.archive.remove(project)
         self.set_archive()
 
 
 #* Time Handling *********************************************************
-class timehandler(object):
+class TimeHandler(object):
     '''Facilitates tracking time and displaying time tracked via sql.'''
     def __init__(self, dbpath=None):
         if dbpath:
-            self.db = dbpath
+            self.dbpath = dbpath
         else:
             print "Need path to database directory."
             return
-        self.conn = sqlite3.connect(self.db + "/db/time.db")
+        self.conn = sqlite3.connect(self.dbpath + "/db/time.db")
         self.cur = self.conn.cursor()
         try:
             query = """CREATE TABLE times
 (project, date INTEGER, seconds INTEGER)"""
             self.cur.execute(query)
-        except:
-            pass
+        except sqlite3.Error, error:
+            print "--- %s:" % error.args[0]
 
     def update(self, project, time, date, replace=None):
+        """Update a time for a project on a specific date.
+        If replace is true then replace time.
+        """
         previous = self.ret_notes(project=project, date=date)
         prev_time = previous.fetchone()
         if prev_time is None:
@@ -169,7 +184,11 @@ class timehandler(object):
         self.conn.commit()
 
     def ret_notes(self, b_date=None, e_date=None, project=None, date=None):
-        '''Takes a search, (beginning, end, and project optional)'''
+        """Take optional arguments, build a query, return results.
+        - b_date, e_date - beggining and ending date.
+        - project - title
+        - date - specific date
+        """
         query = "SELECT"
         qlist = []
         and_ = "" #gets set after the first argument to AND.
