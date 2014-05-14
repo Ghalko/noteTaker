@@ -3,58 +3,100 @@
 """
 
 from collections import OrderedDict
+from Tkinter import *
 
 class GeneralQuery(object):
-    """To replace Search and TimeSummary gui elements."""
-    def __init__(self, mlist, altlist=None, master=None, replace=None,
-                 ncommand=None, rcommand=None):
-        if master is None or not isinstance(mlist, list):
-            print "Need at least master and main list."
+    """To replace Search and TimeSummary query gui elements.
+       Parent needs master, command, and mlist
+       If there is a replace, then it needs alist
+    """
+    def __init__(self, parent=None, replace=None):
+        if (parent is None or not hasattr(parent, 'master')
+            or not hasattr(parent, 'command')
+            or not hasattr(parent, 'mlist')):
+            print "Need parent, command, master, and mlist."
             return
-        self.master = master
-        self.top =  Toplevel(self.master)
-        self.maind = OrderedDict()
-        for key in mlist:
-            self.maind[key] = ""#function that returns a packaged frame:
-        if (replace == 1 and isinstance(altlist, list) and
-            len(mlist) == len(altlist)):
-            self.altl = altlist
+        if replace is not None and not hasattr(parent, 'alist'):
+            print "Replace is true yet no alternative list."
+            return
+        self.parent = parent
+        self.top = None #toplevel window
+        self.cmdb = None #command button
+        self.frame = None #frame for inputs
+        self.rep = None #replace indicator
+        self.fout = None #output frame for parent.
+        self._gui_build(replace) #Lays out the toplevel
+        self.mainl = []
+        for i in parent.mlist:
+            self.mainl.append(LabInput(self.frame, label=i))
+        self.pack()
+
+    def _gui_build(self, replace):
+        """Build top level gui."""
+        self.top = Toplevel(self.parent.master)
+        self.top.transient(self.parent.master)
+        self.top.bind("<Return>", self._get)
+        self.top.bind("<Escape>", self._cancel)
+        self.frame = Frame(self.top)
+        self.frame.pack(side=TOP)
+        button_frame = Frame(self.top)
+        button_frame.pack(side=TOP)
+        self.fout = Frame(self.top)
+        self.fout.pack(side=TOP)
+        self.cmdb = Button(button_frame, text="Search", width=9,
+                           command=self._get)
+        self.cmdb.pack(side=LEFT)
+        Button(button_frame, text="Cancel",
+               command=self._cancel).pack(side=RIGHT)
+        if replace is not None:
             self.rep = IntVar() #to replace or not.
-        else:
-            replace = 0
-        self.svar = StringVar()
-        self.svar.set('Search')
-        self.gui_build(replace, ncommand)
+            Checkbutton(self.top, text="Replace", command=self.replace,
+                        variable=self.rep).pack(side=RIGHT)
 
-    def gui_build(self, replace, command):
-        self.mp.transient(self.master)
-        self.mp.bind("<Return>", self._search)
-        self.mp.bind("<Escape>", self._cancel)
-        for key,entry in self.maind:
+    def get_frame(self):
+        return self.fout
+
+    def _get(self, event=None):
+        """Return input from entries."""
+        out_list = []
+        for entry in self.mainl:
+            out_list.append(entry.get())
+        self.parent.command(out_list, self.rep.get())
+
+    def pack(self):
+        """Pack all entries."""
+        for entry in self.mainl:
             entry.pack()
-        button_frame = Frame(self.master)
-        Button(button_frame, textvariable=self.svar, width=9,
-               command=self._decide).pack(side=LEFT)
-        Button(bf, text="Cancel", command=self._cancel).pack(side=RIGHT)
-        
 
-    def replace(self):
-        pass
+    def replace(self, event=None):
+        """Replace the old command with a new command. Also replace text."""
+        if self.rep.get() == 1:
+            for i in range(len(self.mainl)):
+                self.mainl[i].replace(self.parent.alist[i])
+        else:
+            for i in range(len(self.mainl)):
+                self.mainl[i].replace(self.parent.mlist[i])
+        self.pack()
+        self.cmdb.config(text=rtext)
+        self.cmdb.pack(side=LEFT)
 
     def _cancel(self, event=None):
-        self.d = {}
-        self.mp.destroy()
+        self.top.destroy()
 
 
 class LabInput(object):
     def __init__(self, master, label=None, in_type=None):
         self.master = master
         self.frame = Frame(self.master)
+        label = label + ": "
         self.label = Label(self.frame, text=label)
         self.label.pack(side=LEFT)
-        if in_type is None:
+        if in_type is None or in_type == "Entry":
             self.input = Entry(self.frame)
             self.input.pack(side=RIGHT)
+
+    def get(self):
+        return self.input.get()
 
     def replace(self, new_label):
         self.label.config(text=new_label)

@@ -9,10 +9,10 @@ import sys
 import datetime
 
 class Search(object):
-    '''This is a dialog for searching through notes.'''
+    """This is a dialog for searching through notes."""
     def __init__(self, master=None, title=None, nc=None):
-        '''Must have master, and ncore, title is optional.'''
-        if master == None or nc == None:
+        """Must have master, and ncore, title is optional."""
+        if master == None or nc ==None:
             return
         self.nc = nc #ncore, the database to search through
         self.beg = None #beginning date
