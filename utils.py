@@ -48,8 +48,9 @@ class GeneralQuery(object):
         self.cmdb.pack(side=LEFT)
         Button(button_frame, text="Cancel",
                command=self._cancel).pack(side=RIGHT)
+        self.rep = IntVar() #to replace or not.
+        self.rep.set(-1)
         if replace is not None:
-            self.rep = IntVar() #to replace or not.
             Checkbutton(self.top, text="Replace", command=self.replace,
                         variable=self.rep).pack(side=RIGHT)
 
@@ -61,7 +62,10 @@ class GeneralQuery(object):
         out_list = []
         for entry in self.mainl:
             out_list.append(entry.get())
-        self.parent.command(out_list, self.rep.get())
+        if self.rep.get() == -1:
+            self.parent.command(out_list)
+        else:
+            self.parent.command(out_list, self.rep.get())
 
     def pack(self):
         """Pack all entries."""
@@ -73,11 +77,12 @@ class GeneralQuery(object):
         if self.rep.get() == 1:
             for i in range(len(self.mainl)):
                 self.mainl[i].replace(self.parent.alist[i])
+            self.cmdb.config(text="Replace")
         else:
             for i in range(len(self.mainl)):
                 self.mainl[i].replace(self.parent.mlist[i])
+            self.cmdb.config(text="Search")
         self.pack()
-        self.cmdb.config(text=rtext)
         self.cmdb.pack(side=LEFT)
 
     def _cancel(self, event=None):

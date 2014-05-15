@@ -7,6 +7,7 @@ import timer  #Timer
 from days import Days #main display idea.
 import sys
 import datetime
+from utils import GeneralQuery
 
 class Search(object):
     """This is a dialog for searching through notes."""
@@ -14,85 +15,44 @@ class Search(object):
         """Must have master, and ncore, title is optional."""
         if master == None or nc ==None:
             return
+        self.master = master
         self.nc = nc #ncore, the database to search through
-        self.beg = None #beginning date
-        self.end = None #end date
-        self.pro = None #project
-        self.search = None #search term
-        self.build_search(master, title)
+        self.mlist = ["Begin", "End", "Project", "Phrase"]
+        self.command = self.search
+        genq = GeneralQuery(parent=self)
+        self.frame = genq.get_frame()
+        self.disp = Text(self.frame, height=10, width=80, wrap=WORD,
+                      bg="#008888", spacing1=5)
+        self.disp.pack()
 
-    def build_search(self, master, title):
-        self.mp = Toplevel(master)
-        self.mp.transient(master)
-        self.mp.bind("<Return>", self._search)
-        self.mp.bind("<Escape>", self._cancel)
-        if title:
-            self.mp.title(title)
-        f = Frame(self.mp)         #Sets up the fields.
-        f.pack(side=LEFT)
-        self.d = Text(self.mp, height=10, width=80, wrap=WORD,
-                      bg="#009999", spacing1=5) #Display
-        self.d.pack(side=RIGHT)
-        begf = Frame(self.mp) #beginning date (inclusive)
-        begf.pack(side=TOP)
-        Label(begf, text='Begin:  ').pack(side=LEFT)
-        self.be = Entry(begf)
-        self.be.pack(side=RIGHT)
-        endf = Frame(self.mp) #ending date (inclusive)
-        endf.pack(side=TOP)
-        Label(endf, text='End:    ').pack(side=LEFT)
-        self.ee = Entry(endf)
-        self.ee.pack(side=RIGHT)
-        pf = Frame(self.mp) #project
-        pf.pack(side=TOP)
-        Label(pf, text='Project:').pack(side=LEFT)
-        self.pe = Entry(pf)
-        self.pe.pack(side=RIGHT)
-        self.se = Entry(self.mp) #search term entry
-        self.se.pack(side=TOP, fill=X)
-        bf = Frame(self.mp)
-        bf.pack(side=TOP)
-        search = Button(bf, text="Search", command=self._search)
-        search.pack(side=LEFT)
-        cancel = Button(bf, text="Cancel", command=self._cancel)
-        cancel.pack(side=RIGHT)
-        clear = Button(bf, text="Clear", command=self._clear)
-        clear.pack(side=LEFT)
-
-    def _clear(self):
-        self.d.delete('1.0', END)
-
-    def _search(self, event=None):
-        self.d.delete('1.0', END)
-        self.beg = self.be.get().strip()
-        self.end = self.ee.get().strip()
-        self.pro = self.pe.get().strip()
-        self.search = self.se.get() #can search for things with trailing spaces.
-        if self.search == "":
-            self.d.insert(END, "None")
-        if self.beg != "":
-            self.beg = int(self.beg)
+    def search(self, list_):
+        self.disp.delete('1.0', END)
+        beg = list_[0].strip()
+        end = list_[1].strip()
+        project = list_[2].strip()
+        search = list_[3] #can search for things with trailing spaces.
+        if search == "":
+            self.disp.insert(END, "None")
+        if beg != "":
+            beg = int(beg)
         else:
-            self.beg = None
-        if self.end != "":
-            self.end = int(self.end)
+            beg = None
+        if end != "":
+            end = int(end)
         else:
-            self.end = None
-        if self.pro != "":
-            for row in self.nc.ret_notes(search=self.search, b_date=self.beg,
-                                         e_date=self.end, project=self.pro):
+            end = None
+        if project != "":
+            for row in self.nc.ret_notes(search=search, b_date=beg,
+                                         e_date=end, project=project):
                 s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[2]) + '\n'
-                self.d.insert(END, s)
+                self.disp.insert(END, s)
         else:
-            for row in self.nc.ret_notes(search=self.search, b_date=self.beg,
-                                         e_date=self.end):
+            for row in self.nc.ret_notes(search=search, b_date=beg,
+                                         e_date=end):
                 s = str(str(row[0]) + ' ' + str(row[1]) + ' ' +
                         str(row[2]) + ' ' + str(row[3]) + '\n')
-                self.d.insert(END, s)
-        self.d.pack(side=RIGHT)
-
-    def _cancel(self, event=None):
-        self.mp.destroy()
+                self.disp.insert(END, s)
+        self.disp.pack()
 
 #**************************************************************************
 class LBChoice(object):

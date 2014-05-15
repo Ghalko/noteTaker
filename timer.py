@@ -51,12 +51,9 @@ class TimeSummary(object):
 
     def search(self, list_):
         """Search for times in projects on specified days."""
-        beg = list_[0]
-        end = list_[1]
-        project = list_[2]
-        beg = beg.strip()
-        end = end.strip()
-        project = project.strip()
+        beg = list_[0].strip()
+        end = list_[1].strip()
+        project = list_[2].strip()
         for each in self.dict:
             self.dict[each].clear()
         if beg != "":
