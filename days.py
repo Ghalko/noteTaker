@@ -71,7 +71,10 @@ class Days(object):
         """Creates the vertical scrolled frame"""
         self.frame = VerticalScrolledFrame(self.master)
         self.frame.pack()
-        Button(self.frame.interior, text="More", command=self._more).pack()
+        tempf = Frame(self.frame.interior)
+        tempf.pack()
+        Button(tempf, text="More", command=self._more).pack(side=LEFT)
+        Button(tempf, text="Less", command=self._less).pack(side=RIGHT)
 
     def append(self, date):
         """Appends a new Day instance and repacks."""
@@ -94,6 +97,14 @@ class Days(object):
         for day in list_:
             tlist.append(Day(self, day))
         self.days = tlist + self.days
+        self._repack()
+
+    def _less(self, event=None):
+        if len(self.days) < 4:
+            return
+        for day in self.days:
+            day.gui_forget()
+        self.days = self.days[3:]
         self._repack()
 
     def _repack(self):
