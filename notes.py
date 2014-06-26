@@ -41,17 +41,13 @@ class Search(object):
             end = int(end)
         else:
             end = None
-        if project != "":
-            for row in self.nc.ret_notes(search=search, b_date=beg,
-                                         e_date=end, project=project):
-                s = str(row[0]) + ' ' + str(row[1]) + ' ' + str(row[2]) + '\n'
-                self.disp.insert(END, s)
-        else:
-            for row in self.nc.ret_notes(search=search, b_date=beg,
-                                         e_date=end):
-                s = str(str(row[0]) + ' ' + str(row[1]) + ' ' +
-                        str(row[2]) + ' ' + str(row[3]) + '\n')
-                self.disp.insert(END, s)
+        if project == "":
+            project = None
+        for row in self.nc.ret_notes(search=search, b_date=beg,
+                                     e_date=end, project=project):
+            #Changes ints to strings and concats
+            s = ' '.join([str(r) for r in row]) + "\n"
+            self.disp.insert(END, s)
         self.disp.pack()
 
 #**************************************************************************
@@ -88,10 +84,9 @@ class LBChoice(object):
             self.lb.insert(END, item)     #Inserts items into the list.
         bf = Frame(self.top)
         bf.pack(side=BOTTOM)
-        choose = Button(bf, text="Select", command=self._choose)
-        choose.pack(side=LEFT)
-        cancel = Button(bf, text="Cancel", command=self._cancel)
-        cancel.pack(side=RIGHT)
+        Button(bf, text="Select", command=self._choose).pack(side=LEFT)
+        Button(bf, text="New", command=self._new).pack(side=LEFT)
+        Button(bf, text="Cancel", command=self._cancel).pack(side=LEFT)
 
     def _choose(self, event=None):
         try:
@@ -101,9 +96,12 @@ class LBChoice(object):
             self.v = None
         self.top.destroy()
 
+    def _new(self, event=None):
+        self.v = "NEW"
+        self.top.destroy()
+
     def _cancel(self, event=None):
         self.top.destroy()
-        return None
 
     def return_value(self):
         self.master.wait_window(self.top)
@@ -241,10 +239,13 @@ class NoteGUI(Frame):
                 self.sl.append(ans)
 
     def oproject(self):
-        '''Opens a previously closed project.'''
+        '''Opens a previously closed project. Has new option'''
         p = LBChoice(self.nc.get_archive(), master=self.m,
                      title='Open').return_value()
-        if p == None:
+        if p is None:
+            return
+        elif p == "NEW":
+            self.nproject()
             return
         t = self.t.newtimer(p)
         self.d[p] = ProjectArea(self, p, t)
