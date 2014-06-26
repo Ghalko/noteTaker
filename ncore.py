@@ -43,24 +43,23 @@ class NoteCore(object):
             #If no project then simple.
             query = ' '.join([query, "project,date,time,note FROM notes"])
             query = ' '.join([query, search_str])
+        elif project.find(",") != -1:
+            #Parse comma and space delimited list, print project
+            query = ' '.join([query, "project,date,time,note FROM notes"])
+            temp_list = project.split(", ")
+            p_list = []
+            for each in temp_list:
+                p_list.append("project=?")
+            p_str = " OR ".join(p_list)
+            p_str = "(" + p_str + ")"
+            query = ' '.join([query, search_str, and_, p_str])
+            qlist = qlist + temp_list
+            and_ = "AND"
         else:
-            #Otherwise:
-            if project.find(",") != -1:
-                #Parse comma and space delimited list, print project
-                query = ' '.join([query, "project,date,time,note FROM notes"])
-                temp_list = project.split(", ")
-                p_list = []
-                for each in temp_list:
-                    p_list.append("project=?")
-                p_str = " OR ".join(p_list)
-                p_str = "(" + p_str + ")"
-                query = ' '.join([query, search_str, and_, p_str])
-                qlist = qlist + temp_list
-            else:
-                #Leave out project and use it to search.
-                query = ' '.join([query, "date,time,note FROM notes"])
-                query = ' '.join([query, search_str, and_, "project=?"])
-                qlist.append(project)
+            #Leave out project and use it to search.
+            query = ' '.join([query, "date,time,note FROM notes"])
+            query = ' '.join([query, search_str, and_, "project=?"])
+            qlist.append(project)
             and_ = "AND"
         if b_date is not None:
             #beginning date
@@ -82,6 +81,7 @@ class NoteCore(object):
             query = ' '.join([query, and_, "time=?"])
             qlist.append(time)
             and_ = "AND"
+        query = query + " ORDER BY date,time"
         query = ' '.join(query.split()) #remove extra whitespace.
         return self.cur.execute(query, qlist)
 
