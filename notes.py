@@ -115,7 +115,7 @@ class ProjectArea(object):
         self.remove = parent.rproject   #Remove function
         self.move = parent.move         #Move function
         self.nc = parent.nc
-        self.t = title
+        self.title = title
         self.tcmd = tcmd #passed in from timehandler
         self.lock = 0
         self.going = PhotoImage(file=path+"/going.gif")
@@ -138,30 +138,34 @@ class ProjectArea(object):
 
     def prev(self):
         self.f1 = Frame(self.f)
-        self.days = Days(master=self.f1, ncore=self.nc, project=self.t)
+        self.days = Days(master=self.f1, ncore=self.nc, project=self.title)
         self.p = self.days.get_current()
 
-    def _click(self, event):
-        self.move(title=self.t)
+    def _click(self, event=None):
+        self.move(title=self.title)
 
-    def ent(self): #, event):
+    def ent(self):
         self.f1.pack()
         self.entry.pack()
         self.entry.focus_set()
 
-    def lv(self): #, event):
+    def lv(self):
         if self.lock == 0:
             self.f1.pack_forget()
             self.entry.pack_forget()
 
-    def commit_note(self, event):
-        s = self.entry.get('1.0', END).strip()
+    def commit_note(self, event=None, initial=None):
+        if initial is not None:
+            s = "Open"
+        else:
+            s = self.entry.get('1.0', END).strip()
+        # Does not commit empty notes.
         if s == "":
             return
         t = datetime.datetime.now() #time
         d = int(t.strftime("%Y%m%d"))
         t = int(t.strftime("%H%M"))
-        self.nc.note_in(self.t, s, d, t)
+        self.nc.note_in(self.title, s, d, t)
         self.entry.delete('0.0', END)
         self.entry.mark_set("insert", "%d.%d" % (1, 0))
         if d == self.p.date:
@@ -171,8 +175,10 @@ class ProjectArea(object):
             self.p = self.days.get_current()
 
     def _timer(self):
-        '''Timer button. Calls tcmd to start or stop the timer. Switches the
-        images.'''
+        """
+        Timer button. Calls tcmd to start or stop the timer.
+        Switches the images.
+        """
         temp = self.tcmd()
         if temp:
             self.b.config(image=self.going)
@@ -181,8 +187,9 @@ class ProjectArea(object):
         self.b.pack()
 
     def close(self):
-        self.remove(self.t)
-        self.nc.archive_project(self.t)
+        self.tcmd(close=1) #stops the timer when closing.
+        self.remove(self.title)
+        self.nc.archive_project(self.title)
         self.f.pack_forget()
         self.f.destroy()
 
@@ -222,6 +229,9 @@ class NoteGUI(Frame):
         self.focus = "Other"
 
     def exit(self):
+        for key,project in self.d.iteritems():
+            project.tcmd(close=1) #Shutdown and stores all running timers.
+            project.commit_note() #commit all uncommitted notes.
         self.m.destroy()
 
     def save(self):
@@ -236,6 +246,7 @@ class NoteGUI(Frame):
             if ans not in self.nc.get_all_projects():
                 t = self.t.newtimer(ans)
                 self.d[ans] = ProjectArea(self, ans, t)
+                self.d[ans].commit_note(initial=1)
                 self.sl.append(ans)
 
     def oproject(self):

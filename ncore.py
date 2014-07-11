@@ -98,9 +98,11 @@ class NoteCore(object):
         previous = self.ret_notes(project=project, date=date, time=time)
         prev_note = previous.fetchone()
         if prev_note is not None:
-            text = prev_note[2] + '\n' + text #Add if the minute already exists.
-            query = """UPDATE notes SET note=?
-WHERE project=? AND date=? AND time=?"""
+            text = prev_note[2] + '\n' + text #Add if minute already exists.
+            query = """
+            UPDATE notes SET note=?
+            WHERE project=? AND date=? AND time=?
+            """
             self.cur.execute(query, [text, project, date, time])
         else:
             self.cur.execute("INSERT INTO notes VALUES (?,?,?,?)",

@@ -138,11 +138,16 @@ class ProjectTime(object):
         date_str = int(datetime.datetime.now().strftime("%Y%m%d"))
         self.timeh.update(self.project, time_sec, date_str)
 
-    def click(self):
-        """Run the correct action, depending on the flag"""
+    def click(self, close=None):
+        """
+        Run the correct action, depending on the flag.
+        Close is when project is closed.
+        """
         if self.flag:
             self._stop()
         else:
+            if close is not None:
+                return None
             self._start()
         return self.flag
 
