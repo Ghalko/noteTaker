@@ -7,7 +7,7 @@ import timer  #Timer
 from days import Days #main display idea.
 import sys
 import datetime
-from utils import GeneralQuery
+from utils import GeneralQuery, DBFile
 
 class Search(object):
     """This is a dialog for searching through notes."""
@@ -199,19 +199,27 @@ class NoteGUI(Frame):
     def __init__(self, master=None, path=None):
         master.protocol("WM_DELETE_WINDOW", self.exit)
         self.m = master
-        self.path = path
         self.f = Frame.__init__(self, master)
         self.pack()
-        self.nc = ncore.NoteCore(dbpath=self.path) #noteCore
-        self.t = timer.Timer(self.path)
+        dbfile = DBFile(master, path).return_value()
+        path = "/".join(dbfile.split("/")[:-1])
+        self.nc = ncore.NoteCore(dbpath=dbfile) #noteCore
+        dbfile = DBFile(master, path).return_value()
+        print dbfile
+        self.t = timer.Timer(dbfile)
+        self.runpath = "/".join(runpath.split("/")[:-1])
         self.d = {}
         self.sl = []  #ordered list of open projects.
         self.focus = 0 #current opened
         self.m.bind("<Shift-Button-5>", self.move)
         self.m.bind("<Shift-Button-4>", self.move)
+        self.going = None #image displayed while timing
+        self.stopped = None #image displayed while not timing project
         self.fillmw()
 
     def fillmw(self):
+        self.going = PhotoImage(file=path+"/going.gif")
+        self.stopped = PhotoImage(file=path+"/stopped.gif")
         menubar = Menu(self.f)
         # create a pulldown menu, and add it to the menu bar
         filemenu = Menu(menubar, tearoff=0)
@@ -226,7 +234,7 @@ class NoteGUI(Frame):
         for u in self.sl:
             t = self.t.newtimer(u)
             self.d[u] = ProjectArea(self, u, t)
-        self.focus = "Other"
+        self.focus = ""
 
     def exit(self):
         for key,project in self.d.iteritems():
@@ -274,6 +282,7 @@ class NoteGUI(Frame):
         self.t.summary(self.m)
 
     def move(self, event=None, title=None):
+        print self.focus
         self.d[self.focus].lv()
         i = 0
         if event: #Shift+scroll
@@ -290,11 +299,8 @@ class NoteGUI(Frame):
         self.focus = self.sl[i] #Setting new focus
         self.d[self.focus].ent() #Entering focus
 
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print "Needs -path <path to db>"
-        sys.exit()
 
+if __name__ == "__main__":
     pflag = 0
     path = None
     for a in sys.argv:
@@ -303,9 +309,6 @@ if __name__ == "__main__":
             pflag = 0
         elif str(a) == '-path':
             pflag = 1
-
-    if not path:
-        sys.exit()
 
     root = Tk()
     root.title("noteTaker")

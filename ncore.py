@@ -1,6 +1,7 @@
 """Takes care of sqlite interactions with the database."""
 
 import sqlite3
+from os.path import isfile
 
 class NoteCore(object):
     """Open sql database. Provide functions to read and write.
@@ -12,9 +13,10 @@ class NoteCore(object):
         else:
             print "Need path to database directory."
             return
-        self.conn = sqlite3.connect(self.dbpath + "/db/notes.db")
+        self.conn = sqlite3.connect(self.dbpath)
         self.conn.text_factory = str
         self.cur = self.conn.cursor()
+        self.archive_file = None
         self.archive = []
         self.load_archive()
         query = "CREATE TABLE notes (date INTEGER, time INTEGER, project, note)"
@@ -127,7 +129,11 @@ class NoteCore(object):
 #* Archived project handling **********************************************
     def load_archive(self):
         """Load archived project titles from text file."""
-        with open(self.dbpath + '/db/archive.txt', 'r') as open_file:
+        temp_path = "/".join(self.dbpath.split("/")[:-1])
+        self.archive_file = temp_path + '/archive.txt'
+        if isfile(self.archive_file) != True:
+            return
+        with open(self.archive_file, 'r') as open_file:
             for line in open_file:
                 self.archive.append(line.strip())
 
@@ -145,7 +151,7 @@ class NoteCore(object):
 
     def set_archive(self):
         """Write archive to file."""
-        with open(self.dbpath + '/db/archive.txt', 'w') as open_file:
+        with open(self.archive_file, 'w') as open_file:
             for i in self.archive:
                 i = i + '\n'
                 open_file.write(i)
@@ -170,7 +176,7 @@ class TimeHandler(object):
         else:
             print "Need path to database directory."
             return
-        self.conn = sqlite3.connect(self.dbpath + "/db/time.db")
+        self.conn = sqlite3.connect(self.dbpath)
         self.cur = self.conn.cursor()
         try:
             query = """CREATE TABLE times

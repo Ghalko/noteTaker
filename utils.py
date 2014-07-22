@@ -5,6 +5,9 @@
 from collections import OrderedDict
 from Tkinter import *
 
+from tkFileDialog import askopenfilename, askdirectory
+import tkSimpleDialog
+
 class GeneralQuery(object):
     """To replace Search and TimeSummary query gui elements.
        Parent needs master, command, and mlist
@@ -121,3 +124,41 @@ def count_lines(line, wanted_length=77):
             continue
         count += int(length)
     return count
+
+
+class DBFile(object):
+    def __init__(self, master=None, path=None):
+        self.master = master
+        self.path = path
+        self.file = None
+        self.top = Toplevel(master)
+        self.top.transient(master)
+        self.top.grab_set()
+        Label(self.top, text="Database").pack(side=TOP)
+        Button(self.top, text="New", command=self._new).pack(side=TOP)
+        Button(self.top, text="Open", command=self._open).pack(side=TOP)
+
+    def _new(self, event=None):
+        self.path = askdirectory(initialdir=self.path)
+        print self.path
+        ans = tkSimpleDialog.askstring("", "New DB file:",
+                                       parent=self.master)
+        self.file = self.path + "/" + ans
+        self.top.destroy()
+
+    def _open(self, event=None):
+        if self.path is None:
+            self.file =  askopenfilename(filetypes=(("database", "*.db"),
+                                          ("All files", "*.*")))
+        else:
+            self.file = askopenfilename(filetypes=(("database", "*.db"),
+                                          ("All files", "*.*")),
+                                initialdir=self.path)
+        if self.file == ():
+            self._new()
+        else:
+            self.top.destroy()
+
+    def return_value(self):
+        self.master.wait_window(self.top)
+        return self.file
