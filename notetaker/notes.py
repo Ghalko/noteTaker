@@ -8,6 +8,7 @@ from days import Days #main display idea.
 import sys
 import datetime
 from utils import GeneralQuery, DBFile
+import os
 
 class Search(object):
     """This is a dialog for searching through notes."""
@@ -118,8 +119,8 @@ class ProjectArea(object):
         self.title = title
         self.tcmd = tcmd #passed in from timehandler
         self.lock = 0
-        self.going = PhotoImage(file=path+"/going.gif")
-        self.stopped = PhotoImage(file=path+"/stopped.gif")
+        self.going = parent.going
+        self.stopped = parent.stopped
         self.pdate = None
         self.f = Frame(parent.f, relief=RAISED, borderwidth=2)
         f2 = Frame(self.f)
@@ -201,16 +202,16 @@ class NoteGUI(Frame):
         self.m = master
         self.f = Frame.__init__(self, master)
         self.pack()
-        dbfile = DBFile(master, path).return_value()
-        path = "/".join(dbfile.split("/")[:-1])
-        self.nc = ncore.NoteCore(dbpath=dbfile) #noteCore
-        dbfile = DBFile(master, path).return_value()
-        print dbfile
-        self.t = timer.Timer(dbfile)
-        self.runpath = "/".join(runpath.split("/")[:-1])
+        self.nc = None
+        self.t = None
+        if path is not None:
+            self.nc = ncore.NoteCore(dbpath=os.path.join(path, 'notes.db'))
+            self.t = timer.Timer(os.path.join(path, 'time.db'))
+        temp = os.path.abspath(os.path.dirname(__file__))
+        self.runpath = '/'.join(temp.split('/')[:-1]) + '/data'
         self.d = {}
         self.sl = []  #ordered list of open projects.
-        self.focus = 0 #current opened
+        self.focus = None #current opened
         self.m.bind("<Shift-Button-5>", self.move)
         self.m.bind("<Shift-Button-4>", self.move)
         self.going = None #image displayed while timing
@@ -218,8 +219,8 @@ class NoteGUI(Frame):
         self.fillmw()
 
     def fillmw(self):
-        self.going = PhotoImage(file=path+"/going.gif")
-        self.stopped = PhotoImage(file=path+"/stopped.gif")
+        self.going = PhotoImage(file=self.runpath+"/going.gif")
+        self.stopped = PhotoImage(file=self.runpath+"/stopped.gif")
         menubar = Menu(self.f)
         # create a pulldown menu, and add it to the menu bar
         filemenu = Menu(menubar, tearoff=0)
@@ -229,12 +230,21 @@ class NoteGUI(Frame):
         menubar.add_cascade(label="File", menu=filemenu)
         menubar.add_command(label='Search', command=self.search)
         menubar.add_command(label='Time', command=self._time)
+        menubar.add_command(label='Open', command=self.open)
         self.m.config(menu=menubar)
-        self.sl = self.nc.get_unarchived()
-        for u in self.sl:
-            t = self.t.newtimer(u)
-            self.d[u] = ProjectArea(self, u, t)
-        self.focus = ""
+        if self.nc is not None:
+            self.sl = self.nc.get_unarchived()
+            for u in self.sl:
+                t = self.t.newtimer(u)
+                self.d[u] = ProjectArea(self, u, t)
+
+    def open(self, path=None):
+        """Opens notes databases. Sets notecore and timer."""
+        dbfile = DBFile(self.m, path).return_value()
+        path = "/".join(dbfile.split("/")[:-1])
+        self.nc = ncore.NoteCore(dbpath=dbfile) #noteCore
+        dbfile = DBFile(self.m, path).return_value()
+        self.t = timer.Timer(dbfile)
 
     def exit(self):
         for key,project in self.d.iteritems():
@@ -282,8 +292,8 @@ class NoteGUI(Frame):
         self.t.summary(self.m)
 
     def move(self, event=None, title=None):
-        print self.focus
-        self.d[self.focus].lv()
+        if self.focus is not None:
+            self.d[self.focus].lv()
         i = 0
         if event: #Shift+scroll
             if event.num == 5: #Scroll down
@@ -311,6 +321,7 @@ if __name__ == "__main__":
             pflag = 1
 
     root = Tk()
+    root.minsize(580, 120)
     root.title("noteTaker")
     app = NoteGUI(master=root, path=path)
     app.mainloop()

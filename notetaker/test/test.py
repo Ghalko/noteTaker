@@ -1,3 +1,5 @@
+import utils
+from Tkinter import *
 
 def help():
     print '''This test file is intended to test the database and the gui to a good extent.
