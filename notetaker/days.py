@@ -12,6 +12,7 @@ class VerticalScrolledFrame(Frame):
     * Use the 'interior' attribute to place widgets inside the scrollable frame
     * Construct and pack/place/grid normally
     * This frame only allows vertical scrolling
+    http://tkinter.unpythonic.net/wiki/VerticalScrolledFrame
     """
     def __init__(self, parent, *args, **kw):
         Frame.__init__(self, parent, *args, **kw)
@@ -104,6 +105,7 @@ class Days(object):
             return
         for day in self.days:
             day.gui_forget()
+        self.limit -= 3
         self.days = self.days[3:]
         self._repack()
 

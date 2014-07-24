@@ -245,6 +245,10 @@ class NoteGUI(Frame):
         self.nc = ncore.NoteCore(dbpath=dbfile) #noteCore
         dbfile = DBFile(self.m, path).return_value()
         self.t = timer.Timer(dbfile)
+        self.sl = self.nc.get_unarchived()
+        for u in self.sl:
+            t = self.t.newtimer(u)
+            self.d[u] = ProjectArea(self, u, t)
 
     def exit(self):
         for key,project in self.d.iteritems():
