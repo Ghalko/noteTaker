@@ -219,6 +219,7 @@ class NoteGUI(Frame):
         self.fillmw()
 
     def fillmw(self):
+        """Builds menu for main window sets up projects."""
         self.going = PhotoImage(file=self.runpath+"/going.gif")
         self.stopped = PhotoImage(file=self.runpath+"/stopped.gif")
         menubar = Menu(self.f)
