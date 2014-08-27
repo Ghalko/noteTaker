@@ -1,8 +1,6 @@
-import utils
-from Tkinter import *
+import unittest
 
-def help():
-    print '''This test file is intended to test the database and the gui to a good extent.
+'''This test file is intended to test the database and the gui to a good extent.
 This should:
   - create random entries with somewhat random timestamps.
   - Save entries to a text file for comparison.
@@ -11,27 +9,6 @@ This should:
   - Remove database after testing
   - Collect and show statistics throughout
   - Push buttons to see if there is a place where things break down.'''
-
-class DBTester(object):
-    '''Tests input and searching the gui.'''
-    def __init__(self):
-        pass
-
-    def randEntry(self):
-        return -1
-
-    def randTime(self):
-        return -1
-
-    def input(self): #inputs into text file and database
-        e = self.randEntry()
-        t = self.randTime()
-        #add to text file
-        #add to database
-        return
-
-    def search(self): #take a random word out of the text file and search
-        pass
 
 class GUITester(object):
     def __init__(self):
@@ -48,6 +25,14 @@ class GUITester(object):
 
     def move(self):
         pass
+
+    # def test_empty_note(self):
+    # """ Tests that empty notes or ones with only space
+    # charachters don't get put into the database.
+
+    # Uses Projects, dates and times to enable checking.
+    # """
+    # pass
 
 class TimeTester(object):
     def __init__(self):
