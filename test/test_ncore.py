@@ -32,7 +32,7 @@ class TestNoteCore(unittest.TestCase):
         if seed is None:
             self.seed = random.randint(1000000000, 9999999999)
         random.seed(self.seed)
-        print "seed" + str(self.seed)
+        print "seed " + str(self.seed)
         self.fillrand()
 
     def tearDown(self):
@@ -48,10 +48,38 @@ class TestNoteCore(unittest.TestCase):
             self.cur.execute("SELECT * FROM notes WHERE project=? AND date=? AND time=?",
                              [ent[0], ent[2], ent[3]])
             row = self.cur.fetchone()
-            self.assertEqual([row[0], row[1], str(row[2]), str(row[3])], [ent[2], ent[3], ent[0], ent[1]])
+            self.assertEqual([row[0], row[1], str(row[2]), str(row[3])],
+                             [ent[2], ent[3], ent[0], ent[1]])
 
     def test_ret_notes(self):
-        pass
+        """Tests that a note is returned when searched for.
+
+        This really needs to have a much larger generated database and then
+        test all the possibilities because this actually builds the query
+        rather than just plugging the values into a select statement.
+        """
+        for i in range(10):
+            ent = self.randEntry()
+            self.listed.append(ent)
+            self.cur.execute("INSERT INTO notes VALUES (?,?,?,?)",
+                             [ent[2], ent[3], ent[0], ent[1]])
+            for row in self.nc.ret_notes(search=ent[1], date=ent[2]):
+                self.assertEqual([row[0], row[1], str(row[2]), str(row[3])],
+                                 [ent[2], ent[3], ent[0], ent[1]])
+
+    def test_print_project_day(self):
+        """Tests that all entries from a project and a day are returned
+
+        Does test one of the possibilities for ret_notes, project & date
+        """
+        pass #basically fill database with several other dates
+        #then add specific date a random number of times. Count
+        #Run test and count how many come up.
+
+    def test_get_all_projects(self):
+        """Tests that all distinct projects are returned"""
+        pass #build database, add all projects to list. make a set
+        #compare set length to return length
 
     def randEntry(self):
         """Returns a random entry from generated lists"""
@@ -73,3 +101,5 @@ class TestNoteCore(unittest.TestCase):
             self.projects.append(project)
             text = ''.join(random.choice(string.ascii_letters + "#.,   " + string.digits) for _ in range(random.randint(4, 1000)))
             self.texts.append(text)
+
+#Need to test archives. might want to finish #45 on github.
