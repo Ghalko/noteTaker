@@ -14,21 +14,13 @@ class DatabaseHandler(object):
         self.conn = sqlite3.connect(self.dbpath)
         self.conn.text_factory = str
         self.cur = self.conn.cursor()
+        qlist = None
         query = "CREATE TABLE notes (date INTEGER, time INTEGER, project, note)"
-        try:
-            self.cur.execute(query)
-        except sqlite3.Error, error:
-            print "--- %s:" % error.args[0]
+        self.insert(query, qlist)
         query = "CREATE TABLE times (project, date INTEGER, seconds INTEGER)"
-        try:
-            self.cur.execute(query)
-        except sqlite3.Error, error:
-            print "--- %s:" % error.args[0]
+        self.insert(query, qlist)
         query = "CREATE TABLE archive (project)"
-        try:
-            self.cur.execute(query)
-        except sqlite3.Error, error:
-            print "--- %s:" % error.args[0]
+        self.insert(query, qlist)
 
     def select(self, query, qlist):
         try:
@@ -42,6 +34,14 @@ class DatabaseHandler(object):
         except sqlite3.Error, error:
             print "-s- %s" % error.args[0]
 
+    def query_exists(self, query, qlist):
+        """Return query if it exists"""
+        pass
+
+    def save(self):
+        '''Commit the database.'''
+        self.conn.commit()        
+
 
 class NoteQuery(object):
     """NoteQuery builds queries and returns values"""
@@ -51,14 +51,13 @@ class NoteQuery(object):
             return 1
         self.dbdict = dbdict
 
-    def ret_notes(self, db=None, search=None, b_date=None, e_date=None,
-                  project=None, date=None, time=None):
+    def build_select(self, search=None, b_date=None, e_date=None,
+                     project=None, date=None, time=None):
         """Take optional arguments, build query and return results.
         - search - term to search for in notes
         - b_date, e_date - beggining and ending date
         - project - title
         - date, time - specific date and/or time
-        - if db is not specified then all dbs are searched across
         """
         query = "SELECT"
         qlist = []
@@ -112,7 +111,13 @@ class NoteQuery(object):
             and_ = "AND"
         query = query + " ORDER BY date,time"
         query = ' '.join(query.split()) #remove extra whitespace.
-        return self.cur.execute(query, qlist)
+        return (query, qlist)
+
+    def project_day(self, project, date):
+        return self.build_select(project=project, date=date)
+
+    def project_time(self, project, date, time):
+        return self.build_select(project=project, date=date, time=time)
 
 
 class NoteCore(object):
