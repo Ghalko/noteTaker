@@ -4,8 +4,8 @@ from Tkinter import (Frame, Text, Label, WORD, BOTTOM, TOP,
                      END, LEFT)
 import time
 import datetime
-import ncore
-from utils import GeneralQuery
+import notetaker.ncore
+from notetaker.utils import GeneralQuery
 
 #*************************************************************************
 class TimeSummary(object):

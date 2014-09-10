@@ -2,12 +2,12 @@ import tkSimpleDialog
 from Tkinter import (Tk, Menu, Frame, Label, Button, PhotoImage, Text, Entry,
                      Scrollbar, Toplevel, Listbox, RAISED, RIGHT, LEFT, WORD,
                      Y, END, BOTTOM, TOP, X, SINGLE)
-import ncore  #note core sql
+import notetaker.ncore  #note core sql
 import timer  #Timer
-from days import Days #main display idea.
+from notetaker.days import Days #main display idea.
 import sys
 import datetime
-from utils import GeneralQuery, DBFile
+from notetaker.utils import GeneralQuery, DBFile
 import os
 
 class Search(object):

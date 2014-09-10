@@ -1,4 +1,5 @@
 """Utilities for notetaker.
+- GeneralQuery
 - count_lines,
 """
 

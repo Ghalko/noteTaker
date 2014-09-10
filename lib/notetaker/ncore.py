@@ -3,6 +3,118 @@
 import sqlite3
 from os.path import isfile
 
+class DatabaseHandler(object):
+    """DatabaseHandler handles the databases"""
+    def __init__(self, dbpath=None):
+        if dbpath:
+            self.dbpath = dbpath
+        else:
+            print "Need path to database directory."
+            return
+        self.conn = sqlite3.connect(self.dbpath)
+        self.conn.text_factory = str
+        self.cur = self.conn.cursor()
+        query = "CREATE TABLE notes (date INTEGER, time INTEGER, project, note)"
+        try:
+            self.cur.execute(query)
+        except sqlite3.Error, error:
+            print "--- %s:" % error.args[0]
+        query = "CREATE TABLE times (project, date INTEGER, seconds INTEGER)"
+        try:
+            self.cur.execute(query)
+        except sqlite3.Error, error:
+            print "--- %s:" % error.args[0]
+        query = "CREATE TABLE archive (project)"
+        try:
+            self.cur.execute(query)
+        except sqlite3.Error, error:
+            print "--- %s:" % error.args[0]
+
+    def select(self, query, qlist):
+        try:
+            return self.cur.execute(query, qlist)
+        except sqlite3.Error, error:
+            print "-s- %s" % error.args[0]
+
+    def insert(self, query, qlist):
+        try:
+            self.cur.execute(query, qlist)
+        except sqlite3.Error, error:
+            print "-s- %s" % error.args[0]
+
+
+class NoteQuery(object):
+    """NoteQuery builds queries and returns values"""
+    def __init__(self, dbdict=None):
+        if dbdict is None:
+            print "Requires handler of databases."
+            return 1
+        self.dbdict = dbdict
+
+    def ret_notes(self, db=None, search=None, b_date=None, e_date=None,
+                  project=None, date=None, time=None):
+        """Take optional arguments, build query and return results.
+        - search - term to search for in notes
+        - b_date, e_date - beggining and ending date
+        - project - title
+        - date, time - specific date and/or time
+        - if db is not specified then all dbs are searched across
+        """
+        query = "SELECT"
+        qlist = []
+        search_str = "WHERE"
+        and_ = "" #gets set after the first argument to AND.
+        if search is not None:
+            search_str = "WHERE note LIKE ?"
+            qlist.append('%'+search+'%')
+            and_ = "AND"
+        if project is None:
+            #If no project then simple.
+            query = ' '.join([query, "project,date,time,note FROM notes"])
+            query = ' '.join([query, search_str])
+        elif project.find(",") != -1:
+            #Parse comma and space delimited list, print project
+            query = ' '.join([query, "project,date,time,note FROM notes"])
+            temp_list = project.split(", ")
+            p_list = []
+            for each in temp_list:
+                p_list.append("project=?")
+            p_str = " OR ".join(p_list)
+            p_str = "(" + p_str + ")"
+            query = ' '.join([query, search_str, and_, p_str])
+            qlist = qlist + temp_list
+            and_ = "AND"
+        else:
+            #Leave out project and use it to search.
+            query = ' '.join([query, "date,time,note FROM notes"])
+            query = ' '.join([query, search_str, and_, "project=?"])
+            qlist.append(project)
+            and_ = "AND"
+        if b_date is not None:
+            #beginning date
+            query = ' '.join([query, and_, "date>=?"])
+            qlist.append(b_date)
+            and_ = "AND"
+        if e_date is not None:
+            #ending date
+            query = ' '.join([query, and_, "date<=?"])
+            qlist.append(e_date)
+            and_ = "AND"
+        if date is not None:
+            #Specific date probably not used with b_date or e_date
+            query = ' '.join([query, and_, "date=?"])
+            qlist.append(date)
+            and_ = "AND"
+        if time is not None:
+            #Specific time
+            query = ' '.join([query, and_, "time=?"])
+            qlist.append(time)
+            and_ = "AND"
+        query = query + " ORDER BY date,time"
+        query = ' '.join(query.split()) #remove extra whitespace.
+        return self.cur.execute(query, qlist)
+
+
 class NoteCore(object):
     """Open sql database. Provide functions to read and write.
     Main functionality note_in and ret_notes.
