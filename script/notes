@@ -1,0 +1,21 @@
+#!/local/python/bin/python2
+
+import notetaker.notes as notes
+import sys
+from Tkinter import *
+
+
+pflag = 0
+path = None
+for a in sys.argv:
+	if pflag:
+		path = str(a)
+		pflag = 0
+	elif str(a) == '-path':
+		pflag = 1
+
+root = Tk()
+root.minsize(580, 120)
+root.title("noteTaker")
+app = notes.NoteGUI(master=root, path=path)
+app.mainloop()
