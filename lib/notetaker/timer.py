@@ -4,7 +4,7 @@ from Tkinter import (Frame, Text, Label, WORD, BOTTOM, TOP,
                      END, LEFT)
 import time
 import datetime
-import notetaker.ncore
+import notetaker.ncore as ncore
 from notetaker.utils import GeneralQuery
 
 #*************************************************************************

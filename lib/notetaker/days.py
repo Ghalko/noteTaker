@@ -3,8 +3,8 @@ text boxes of varying sizes for easier date reading and fewer days loaded."""
 
 from Tkinter import (Tk, Frame, Scrollbar, Canvas, Button, Text, WORD, BOTH,
                      VERTICAL, END, Y, NW, RIGHT, LEFT, FALSE, TRUE)
-import notetaker.ncore
-import notetaker.utils
+import notetaker.ncore as ncore
+import notetaker.utils as utils
 import datetime
 
 class VerticalScrolledFrame(Frame):

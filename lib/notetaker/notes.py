@@ -2,7 +2,7 @@ import tkSimpleDialog
 from Tkinter import (Tk, Menu, Frame, Label, Button, PhotoImage, Text, Entry,
                      Scrollbar, Toplevel, Listbox, RAISED, RIGHT, LEFT, WORD,
                      Y, END, BOTTOM, TOP, X, SINGLE)
-import notetaker.ncore  #note core sql
+import notetaker.ncore as ncore #note core sql
 import timer  #Timer
 from notetaker.days import Days #main display idea.
 import sys
