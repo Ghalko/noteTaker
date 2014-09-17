@@ -36,7 +36,11 @@ class DatabaseHandler(object):
 
     def query_exists(self, query, qlist):
         """Return query if it exists"""
-        pass
+        previous = self.select(query, qlist)
+        prev_note = previous.fetchone()
+        if prev_note is None:
+            return None
+        return prev_note
 
     def save(self):
         '''Commit the database.'''
