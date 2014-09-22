@@ -123,6 +123,16 @@ class NoteQuery(object):
     def project_time(self, project, date, time):
         return self.build_select(project=project, date=date, time=time)
 
+    def all_projects(self):
+        return ("SELECT DISTINCT project FROM notes", [])
+
+    def all_dates(self, project=None):
+        '''Return a list of all distinct dates'''
+        if project is not None:
+            return ("SELECT DISTINCT date FROM notes WHERE project=?", [project])
+        else:
+            return ("SELECT DISTINCT date FROM notes", [])
+
 
 class NoteCore(object):
     """Open sql database. Provide functions to read and write.
