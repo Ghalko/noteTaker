@@ -11,16 +11,21 @@ class DatabaseHandler(object):
         else:
             print "Need path to database directory."
             return
+        #setting up the database
         self.conn = sqlite3.connect(self.dbpath)
         self.conn.text_factory = str
         self.cur = self.conn.cursor()
+        #Three tables and their columns.
+        tables = {"notes": "(date INTEGER, time INTEGER, project, note)",
+                  "times": "(project, date INTEGER, seconds INTEGER)",
+                  "archive": "(project)"}
+        query = "SELECT name FROM sqlite_master WHERE type='table'"
         qlist = None
-        query = "CREATE TABLE notes (date INTEGER, time INTEGER, project, note)"
-        self.insert(query, qlist)
-        query = "CREATE TABLE times (project, date INTEGER, seconds INTEGER)"
-        self.insert(query, qlist)
-        query = "CREATE TABLE archive (project)"
-        self.insert(query, qlist)
+        result = [r[0] for r in self.select(query, qlist)]
+        for name,value in tables:
+            if name not in result:
+                query = "CREATE TABLE " + name + " " + value
+                self.insert(query, qlist)
 
     def select(self, query, qlist):
         try:
@@ -49,11 +54,8 @@ class DatabaseHandler(object):
 
 class NoteQuery(object):
     """NoteQuery builds queries and returns values"""
-    def __init__(self, dbdict=None):
-        if dbdict is None:
-            print "Requires handler of databases."
-            return 1
-        self.dbdict = dbdict
+    def __init__(self):
+        pass
 
     def build_select(self, search=None, b_date=None, e_date=None,
                      project=None, date=None, time=None):
@@ -134,6 +136,72 @@ class NoteQuery(object):
             return ("SELECT DISTINCT date FROM notes", [])
 
 
+class TimeQuery(object):
+    def __init__(self):
+        pass
+
+    def build_select(self, b_date=None, e_date=None, project=None, date=None):
+        """Take optional arguments, build a query, return results.
+        - b_date, e_date - beggining and ending date.
+        - project - title
+        - date - specific date
+        """
+        query = "SELECT"
+        qlist = []
+        and_ = "" #gets set after the first argument to AND.
+        if project is None:
+            #If no project then include project in output.
+            query = ' '.join([query, "project,date,seconds FROM times"])
+            query = ' '.join([query, "WHERE"])
+        else:
+            #Otherwise leave out project and use it to search.
+            query = ' '.join([query, "date,seconds FROM times"])
+            query = ' '.join([query, "WHERE project=?"])
+            qlist.append(project)
+            and_ = "AND"
+        if b_date is not None:
+            #beginning date
+            query = ' '.join([query, and_, "date>=?"])
+            qlist.append(b_date)
+            and_ = "AND"
+        if e_date is not None:
+            #ending date
+            query = ' '.join([query, and_, "date<=?"])
+            qlist.append(e_date)
+            and_ = "AND"
+        if date is not None:
+            #Specific date probably not used with b_date or e_date
+            query = ' '.join([query, and_, "date=?"])
+            qlist.append(date)
+            and_ = "AND"
+        query = ' '.join(query.split()) #remove extra whitespace.
+        return (query, qlist)
+
+    def project_day(self, project, date):
+        return self.build_select(project=project, date=date)
+
+    def insert_time(self, project, date, time):
+        return ("INSERT INTO times VALUES (?,?,?)", [project, date, time])
+
+    def update_time(self, project, date, time):
+        return ("UPDATE times SET seconds=? WHERE project=? AND date=?",
+                [time, project, date])
+
+class ArchiveQuery(object):
+    def __init__(self):
+        pass
+
+    def build_select(self):
+        return ("SELECT DISTINCT project FROM archive", None)
+
+    def insert_project(self, project):
+        return ("INSERT INTO archive VALUES (?)", [project])
+
+    def delete_project(self, project):
+        """Should be the only delete in the whole notetaker."""
+        return ("DELETE FROM archive WHERE project=?", [project])
+
+
 class NoteCore(object):
     """Open sql database. Provide functions to read and write.
     Main functionality note_in and ret_notes.
@@ -150,6 +218,8 @@ class NoteCore(object):
         self.archive_file = None
         self.archive = []
         self.load_archive()
+        query = "SELECT name FROM sqlite_master WHERE type='table'"
+        print [r[0] for r in self.cur.execute(query)]
         query = "CREATE TABLE notes (date INTEGER, time INTEGER, project, note)"
         try:
             self.cur.execute(query)
@@ -326,13 +396,10 @@ class TimeHandler(object):
             self.cur.execute("INSERT INTO times VALUES (?,?,?)",
                            [project, date, time])
         else:
-            if replace:
-                query = "UPDATE times SET seconds=? WHERE project=? AND date=?"
-                self.cur.execute(query, [time, project, date])
-            else:
+            if replace != 1:
                 time = time + prev_time[1]
-                query = "UPDATE times SET seconds=? WHERE project=? AND date=?"
-                self.cur.execute(query, [time, project, date])
+            query = "UPDATE times SET seconds=? WHERE project=? AND date=?"
+            self.cur.execute(query, [time, project, date])
         self.conn.commit()
 
     def ret_notes(self, b_date=None, e_date=None, project=None, date=None):
