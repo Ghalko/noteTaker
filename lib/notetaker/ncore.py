@@ -3,8 +3,54 @@
 import sqlite3
 from os.path import isfile
 
+class nNoteCore(object):
+    """List and interaction with databases"""
+    #change to NoteCore when fully transitioned
+    def __init__(self):
+        #possible list of dbs
+        self.dbs = {}
+        self.default= 1
+        self.nq = NoteQuery()
+        self.tq = TimeQuery()
+        self.aq = ArchiveQuery()
+
+    def add_db(self, db, name=None):
+        temp = name
+        if name is None:
+            temp = str(self.default)
+            self.default += 1
+        self.dbs{temp} = db
+        return temp
+
+    def fetch_all(self, name=None, ttype=None, **kwargs):
+        query = None
+        qlist = None
+        if ttype is None or name is None:
+            return
+        elif ttype == "notes":
+            #use notequery
+        elif ttype == "time":
+            #use timequery
+        elif ttype == "archive"
+            #use archivequery
+        else:
+            return
+        return self.dbs[name].select(query, qlist)
+
+    def fetch_one(self):
+        pass
+
+    def insert(self):
+        #should be able to handle updates for time and notes too.
+        pass
+
+    def archive_delete(self, name=None):
+        #only for archives
+        pass
+
+
 class DatabaseHandler(object):
-    """DatabaseHandler handles the databases"""
+    """DatabaseHandler handles one database"""
     def __init__(self, dbpath=None):
         if dbpath:
             self.dbpath = dbpath
@@ -36,6 +82,7 @@ class DatabaseHandler(object):
     def insert(self, query, qlist):
         try:
             self.cur.execute(query, qlist)
+            self.save()
         except sqlite3.Error, error:
             print "-s- %s" % error.args[0]
 
@@ -49,7 +96,7 @@ class DatabaseHandler(object):
 
     def save(self):
         '''Commit the database.'''
-        self.conn.commit()        
+        self.conn.commit()
 
 
 class NoteQuery(object):
@@ -135,6 +182,15 @@ class NoteQuery(object):
         else:
             return ("SELECT DISTINCT date FROM notes", [])
 
+    def insert(self, project, date, time, text):
+        return ("INSERT INTO notes VALUES (?,?,?,?)",
+                [date, time, project, text])
+
+    def update(self, project, date, time, text):
+        query = """UPDATE notes SET note=? 
+                WHERE project=? AND date=? AND time=?"""
+        return (query, [text, project, date, time])
+
 
 class TimeQuery(object):
     def __init__(self):
@@ -186,6 +242,7 @@ class TimeQuery(object):
     def update_time(self, project, date, time):
         return ("UPDATE times SET seconds=? WHERE project=? AND date=?",
                 [time, project, date])
+
 
 class ArchiveQuery(object):
     def __init__(self):
