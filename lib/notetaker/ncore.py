@@ -19,7 +19,7 @@ class nNoteCore(object):
         if name is None:
             temp = str(self.default)
             self.default += 1
-        self.dbs{temp} = db
+        self.dbs[temp] = db
         return temp
 
     def fetch_all(self, name=None, ttype=None, **kwargs):
@@ -28,19 +28,22 @@ class nNoteCore(object):
         if ttype is None or name is None:
             return
         elif ttype == "notes":
+            pass
             #use notequery
         elif ttype == "time":
+            pass
             #use timequery
-        elif ttype == "archive"
+        elif ttype == "archive":
+            pass
             #use archivequery
         else:
             return
         return self.dbs[name].select(query, qlist)
 
-    def fetch_one(self):
+    def fetch_one(self, name=None):
         pass
 
-    def insert(self):
+    def insert(self, name=None):
         #should be able to handle updates for time and notes too.
         pass
 
