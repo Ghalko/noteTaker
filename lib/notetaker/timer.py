@@ -9,7 +9,7 @@ from notetaker.utils import GeneralQuery
 
 #*************************************************************************
 class TimeSummary(object):
-    """For retrieving times from the data base. And possibly updating."""
+    """For retrieving times from the data base. And updating."""
     func = None
 
     def __init__(self, th=None, master=None):
@@ -84,7 +84,8 @@ class TimeDisp(object):
     '''Project time summary and list of dates and times.'''
     def __init__(self, master, project):
         self.frame = Frame(master, borderwidth=2)
-        Label(self.frame, text=project).pack(side=TOP)
+        self.project = project
+        Button(self.frame, text=project, command=self._pop).pack(side=TOP)
         self.time = 0 #total time on project over period.
         self.label = Label(self.frame)
         self.label.pack(side=TOP)
@@ -116,6 +117,10 @@ class TimeDisp(object):
         self.disp.delete('1.0', END)
         self.time = 0
         self.frame.pack_forget()
+
+    def _pop(self, event=None):
+        
+
 
 #* Project Timer *******************************************************
 class ProjectTime(object):
