@@ -1,7 +1,7 @@
 """Module for timing events and tasks."""
 
 from Tkinter import (Frame, Text, Label, WORD, BOTTOM, TOP,
-                     END, LEFT)
+                     END, LEFT, Button)
 import time
 import datetime
 import notetaker.ncore as ncore
@@ -20,8 +20,8 @@ class TimeSummary(object):
         self.mlist = ["Begin", "End", "Project"]
         self.alist = ["Date", "New", "Project"]
         self.command = self._decide
-        genq = GeneralQuery(parent=self, replace=1)
-        self.frame = genq.get_frame()
+        self.genq = GeneralQuery(parent=self, replace=1)
+        self.frame = self.genq.get_frame()
         self.dict = {} #dictionary of projects
 
     def _decide(self, list_, replace=None):
@@ -66,7 +66,7 @@ class TimeSummary(object):
             end = None
         if project:
             if project not in self.dict:
-                self.dict[project] = TimeDisp(self.frame, project)
+                self.dict[project] = TimeDisp(self.frame, project, self.genq)
             for row in self.timeh.ret_notes(b_date=beg, e_date=end,
                                             project=project):
                 self.dict[project].append(row[0], row[1])
@@ -74,7 +74,7 @@ class TimeSummary(object):
         else:
             for row in self.timeh.ret_notes(b_date=beg, e_date=end):
                 if row[0] not in self.dict:
-                    self.dict[row[0]] = TimeDisp(self.frame, row[0])
+                    self.dict[row[0]] = TimeDisp(self.frame, row[0], self.genq)
                 self.dict[row[0]].append(row[1], row[2])
                 self.dict[row[0]].update()
 
@@ -82,9 +82,10 @@ class TimeSummary(object):
 #***********************************************************************
 class TimeDisp(object):
     '''Project time summary and list of dates and times.'''
-    def __init__(self, master, project):
+    def __init__(self, master, project, genq):
         self.frame = Frame(master, borderwidth=2)
         self.project = project
+        self.genq = genq
         Button(self.frame, text=project, command=self._pop).pack(side=TOP)
         self.time = 0 #total time on project over period.
         self.label = Label(self.frame)
@@ -119,7 +120,8 @@ class TimeDisp(object):
         self.frame.pack_forget()
 
     def _pop(self, event=None):
-        
+        """Pops the project name into the project"""
+        self.genq.insert("Project", self.project)
 
 
 #* Project Timer *******************************************************

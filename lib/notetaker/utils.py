@@ -92,6 +92,15 @@ class GeneralQuery(object):
     def _cancel(self, event=None):
         self.top.destroy()
 
+    def insert(self, entry, text):
+        i = None
+        if self.rep.get() == 1:
+            i = self.parent.alist.index(entry)
+        else:
+            i = self.parent.mlist.index(entry)
+        if i is not None and i > -1:
+            self.mainl[i].insert(text)
+
 
 class LabInput(object):
     def __init__(self, master, label=None, in_type=None):
@@ -101,8 +110,8 @@ class LabInput(object):
         self.label = Label(self.frame, text=label)
         self.label.pack(side=LEFT)
         if in_type is None or in_type == "Entry":
-            self.input = Entry(self.frame)
-            self.input.pack(side=RIGHT)
+            self.input = StringVar()
+            Entry(self.frame, textvariable=self.input).pack(side=RIGHT)
 
     def get(self):
         return self.input.get()
@@ -113,6 +122,10 @@ class LabInput(object):
 
     def pack(self, **kwargs):
         self.frame.pack(side=TOP)
+
+    def insert(self, text):
+        """Inserts a text value into entry."""
+        self.input.set(text)
 
 
 def count_lines(line, wanted_length=77):
